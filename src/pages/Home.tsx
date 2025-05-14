@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BedDouble, Coffee, Wifi } from "lucide-react";
+import { ArrowRight, BedDouble, Coffee, Wifi, Quote } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import InfiniteScrollReviews from "@/components/InfiniteScrollReviews";
 
 const Home = () => {
   return (
@@ -19,7 +20,7 @@ const Home = () => {
               <span className="text-[#E8C3A3]">Luxurious</span> <span className="text-[#C45D3A]">Comfort</span> in the Heart of the City
             </h1>
             <p className="text-xl text-white/90 mb-8">
-              Experience unparalleled elegance and tranquility at Macchiato Suites, 
+              Experience unparalleled elegance and tranquility at Macchiato Suites,
               where every stay is crafted for perfection.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -42,8 +43,8 @@ const Home = () => {
               Welcome to Macchiato Suites
             </h2>
             <p className="text-lg text-neutral-600">
-              Nestled in the vibrant heart of the city, Macchiato Suites offers a perfect blend of luxury, comfort, 
-              and exceptional service. Whether you're visiting for business or pleasure, our elegant accommodations 
+              Nestled in the vibrant heart of the city, Macchiato Suites offers a perfect blend of luxury, comfort,
+              and exceptional service. Whether you're visiting for business or pleasure, our elegant accommodations
               and world-class amenities ensure an unforgettable stay.
             </p>
           </div>
@@ -56,7 +57,7 @@ const Home = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Premium Accommodations</h3>
                   <p className="text-neutral-600">
-                    Our rooms and suites are meticulously designed with your comfort in mind, 
+                    Our rooms and suites are meticulously designed with your comfort in mind,
                     featuring plush bedding, elegant décor, and all the modern amenities you need.
                   </p>
                 </div>
@@ -68,7 +69,7 @@ const Home = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Fine Dining Experience</h3>
                   <p className="text-neutral-600">
-                    Indulge in exceptional cuisine at our restaurant, where our chefs create 
+                    Indulge in exceptional cuisine at our restaurant, where our chefs create
                     memorable meals using the finest locally-sourced ingredients.
                   </p>
                 </div>
@@ -80,16 +81,16 @@ const Home = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Comprehensive Amenities</h3>
                   <p className="text-neutral-600">
-                    From our state-of-the-art fitness center to our relaxing spa services, 
+                    From our state-of-the-art fitness center to our relaxing spa services,
                     we provide everything you need for a comfortable and enjoyable stay.
                   </p>
                 </div>
               </div>
             </div>
             <div className="rounded-lg overflow-hidden shadow-lg">
-              <img 
-                src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070" 
-                alt="Hotel Lobby" 
+              <img
+                src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070"
+                alt="Hotel Lobby"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-in-out"
               />
             </div>
@@ -103,7 +104,7 @@ const Home = () => {
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-12 text-[#8A5A44]">
             Why Choose Macchiato Suites?
           </h2>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-lg shadow-sm flex flex-col items-center text-center">
               <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-6">
@@ -114,7 +115,7 @@ const Home = () => {
                 Our spacious suites are designed for comfort with premium bedding and elegant decor.
               </p>
             </div>
-            
+
             <div className="bg-white p-8 rounded-lg shadow-sm flex flex-col items-center text-center">
               <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-6">
                 <Coffee className="h-7 w-7 text-[#C45D3A]" />
@@ -124,7 +125,7 @@ const Home = () => {
                 Enjoy our award-winning restaurant serving gourmet meals made from local ingredients.
               </p>
             </div>
-            
+
             <div className="bg-white p-8 rounded-lg shadow-sm flex flex-col items-center text-center">
               <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-6">
                 <Wifi className="h-7 w-7 text-[#C45D3A]" />
@@ -137,7 +138,7 @@ const Home = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Room Showcase */}
       <section className="py-16">
         <div className="container mx-auto px-4">
@@ -147,14 +148,14 @@ const Home = () => {
           <p className="text-lg text-neutral-600 mb-10">
             Discover our collection of thoughtfully designed accommodations
           </p>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Room Card 1 */}
             <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
               <div className="h-64 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070" 
-                  alt="Deluxe Suite" 
+                <img
+                  src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"
+                  alt="Deluxe Suite"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -169,13 +170,13 @@ const Home = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Room Card 2 */}
             <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
               <div className="h-64 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070" 
-                  alt="Executive Suite" 
+                <img
+                  src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070"
+                  alt="Executive Suite"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -190,13 +191,13 @@ const Home = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Room Card 3 */}
             <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
               <div className="h-64 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070" 
-                  alt="Penthouse Suite" 
+                <img
+                  src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070"
+                  alt="Penthouse Suite"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -212,7 +213,7 @@ const Home = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-12 text-center">
             <Button className="bg-[#8A5A44] hover:bg-[#6B4636] text-white">
               <Link to="/rooms">View All Rooms</Link> <ArrowRight className="ml-2 h-4 w-4" />
@@ -220,7 +221,28 @@ const Home = () => {
           </div>
         </div>
       </section>
-      
+
+      {/* Reviews Section */}
+      <section className="py-16 bg-[#F9F5F2]">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-[#EEDFD0] mb-4">
+              <Quote className="h-6 w-6 text-[#C45D3A]" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-3 text-[#8A5A44]">
+              What Our Guests Say
+            </h2>
+            <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+              Discover why guests from around the world choose Macchiato Suites for their stay
+            </p>
+          </div>
+
+          <div className="py-4">
+            <InfiniteScrollReviews />
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-[#C45D3A] text-white">
         <div className="container mx-auto px-4 text-center">
@@ -235,7 +257,7 @@ const Home = () => {
           </Button>
         </div>
       </section>
-      
+
       <Footer />
     </div>
   );
