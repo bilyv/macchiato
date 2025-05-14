@@ -1,29 +1,25 @@
 {
   "name": "backend",
-  "module": "src/index.ts",
+  "module": "index.ts",
   "type": "module",
-  "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "start": "bun src/index.ts",
-    "build": "bun build src/index.ts --outdir ./dist"
-  },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cors": "^2.8.18",
-    "@types/express": "^5.0.1",
-    "@types/jsonwebtoken": "^9.0.6"
+    "@types/pg": "^8.11.3"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "pg": "^8.11.3",
-    "zod": "^3.23.8"
+    "pg": "^8.11.3"
+  },
+  "scripts": {
+    "dev": "bun --watch index.ts",
+    "start": "bun index.ts",
+    "build": "bun build index.ts --outdir ./dist"
   }
 }
