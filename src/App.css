@@ -76,11 +76,48 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+@keyframes scrollReverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Standard speed animations */
 .animate-scroll {
   animation: scroll 60s linear infinite;
 }
 
+.animate-scroll-reverse {
+  animation: scrollReverse 60s linear infinite;
+}
+
+/* Slow speed animations */
+.animate-scroll-slow {
+  animation: scroll 90s linear infinite;
+}
+
+.animate-scroll-slow-reverse {
+  animation: scrollReverse 90s linear infinite;
+}
+
+/* Fast speed animations */
+.animate-scroll-fast {
+  animation: scroll 40s linear infinite;
+}
+
+.animate-scroll-fast-reverse {
+  animation: scrollReverse 40s linear infinite;
+}
+
 /* Pause animation on hover */
-.animate-scroll:hover {
+.animate-scroll:hover,
+.animate-scroll-reverse:hover,
+.animate-scroll-slow:hover,
+.animate-scroll-slow-reverse:hover,
+.animate-scroll-fast:hover,
+.animate-scroll-fast-reverse:hover {
   animation-play-state: paused;
 }

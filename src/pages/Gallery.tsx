@@ -3,12 +3,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Camera, MapPin, Utensils, Calendar } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import GalleryTabs from "@/components/GalleryTabs";
+import HorizontalScrollGallery from "@/components/HorizontalScrollGallery";
 
 const Gallery = () => {
-  // Define categories
-  const categories = ["Attractions", "Neighborhoods", "Foods", "Events"];
-
   // State for active category
   const [activeCategory, setActiveCategory] = useState("All");
 
@@ -144,7 +141,10 @@ const Gallery = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             <div
               className={`flex flex-col items-center p-4 rounded-lg cursor-pointer transition-colors ${activeCategory === "Attractions" ? "bg-[#EEDFD0]" : "hover:bg-gray-50"}`}
-              onClick={() => setActiveCategory(activeCategory === "Attractions" ? "All" : "Attractions")}
+              onClick={() => {
+                setActiveCategory(activeCategory === "Attractions" ? "All" : "Attractions");
+                document.getElementById("attractions-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               <div className="h-12 w-12 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mb-2">
                 <Camera className="h-6 w-6" />
@@ -154,7 +154,10 @@ const Gallery = () => {
 
             <div
               className={`flex flex-col items-center p-4 rounded-lg cursor-pointer transition-colors ${activeCategory === "Neighborhoods" ? "bg-[#EEDFD0]" : "hover:bg-gray-50"}`}
-              onClick={() => setActiveCategory(activeCategory === "Neighborhoods" ? "All" : "Neighborhoods")}
+              onClick={() => {
+                setActiveCategory(activeCategory === "Neighborhoods" ? "All" : "Neighborhoods");
+                document.getElementById("neighborhoods-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               <div className="h-12 w-12 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mb-2">
                 <MapPin className="h-6 w-6" />
@@ -164,7 +167,10 @@ const Gallery = () => {
 
             <div
               className={`flex flex-col items-center p-4 rounded-lg cursor-pointer transition-colors ${activeCategory === "Foods" ? "bg-[#EEDFD0]" : "hover:bg-gray-50"}`}
-              onClick={() => setActiveCategory(activeCategory === "Foods" ? "All" : "Foods")}
+              onClick={() => {
+                setActiveCategory(activeCategory === "Foods" ? "All" : "Foods");
+                document.getElementById("foods-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               <div className="h-12 w-12 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mb-2">
                 <Utensils className="h-6 w-6" />
@@ -174,7 +180,10 @@ const Gallery = () => {
 
             <div
               className={`flex flex-col items-center p-4 rounded-lg cursor-pointer transition-colors ${activeCategory === "Events" ? "bg-[#EEDFD0]" : "hover:bg-gray-50"}`}
-              onClick={() => setActiveCategory(activeCategory === "Events" ? "All" : "Events")}
+              onClick={() => {
+                setActiveCategory(activeCategory === "Events" ? "All" : "Events");
+                document.getElementById("events-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
               <div className="h-12 w-12 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mb-2">
                 <Calendar className="h-6 w-6" />
@@ -185,56 +194,73 @@ const Gallery = () => {
         </div>
       </section>
 
-      {/* Gallery Grid */}
-      <section className="py-8 pb-16 bg-white">
+      {/* Attractions Gallery */}
+      <section id="attractions-section" className="py-8 bg-white">
         <div className="container mx-auto px-4">
-          {/* Category Tabs */}
-          <GalleryTabs
-            categories={categories}
-            activeCategory={activeCategory}
-            onCategoryChange={setActiveCategory}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {galleryImages
-              .filter(image => activeCategory === "All" || image.category === activeCategory)
-              .map((image, index) => (
-                <div key={index} className="overflow-hidden rounded-lg shadow-md group h-full">
-                  <div className="relative h-full flex flex-col">
-                    <div className="overflow-hidden">
-                      <img
-                        src={image.src}
-                        alt={image.alt}
-                        className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
-                      />
-                    </div>
-                    <div className="p-4 bg-white flex-grow">
-                      <h3 className="font-semibold text-[#8A5A44] mb-1">{image.alt}</h3>
-                      <p className="text-sm text-neutral-600">{image.description}</p>
-                      <div className="mt-2">
-                        <span className="inline-block px-2 py-1 text-xs rounded-full bg-[#EEDFD0] text-[#8A5A44]">
-                          {image.category}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <div className="flex items-center mb-6">
+            <div className="h-10 w-10 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mr-3">
+              <Camera className="h-5 w-5" />
+            </div>
+            <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Attractions</h2>
           </div>
 
-          {/* Empty state when no images match the filter */}
-          {galleryImages.filter(image => activeCategory === "All" || image.category === activeCategory).length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-neutral-500">No images found in this category.</p>
-              <Button
-                variant="outline"
-                className="mt-4 border-[#C45D3A] text-[#C45D3A] hover:bg-[#EEDFD0]"
-                onClick={() => setActiveCategory("All")}
-              >
-                View All Images
-              </Button>
+          <HorizontalScrollGallery
+            images={galleryImages.filter(img => img.category === "Attractions")}
+            speed="medium"
+          />
+        </div>
+      </section>
+
+      {/* Neighborhoods Gallery */}
+      <section id="neighborhoods-section" className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center mb-6">
+            <div className="h-10 w-10 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mr-3">
+              <MapPin className="h-5 w-5" />
             </div>
-          )}
+            <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Neighborhoods</h2>
+          </div>
+
+          <HorizontalScrollGallery
+            images={galleryImages.filter(img => img.category === "Neighborhoods")}
+            speed="slow"
+            reverse={true}
+          />
+        </div>
+      </section>
+
+      {/* Foods Gallery */}
+      <section id="foods-section" className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center mb-6">
+            <div className="h-10 w-10 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mr-3">
+              <Utensils className="h-5 w-5" />
+            </div>
+            <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Foods</h2>
+          </div>
+
+          <HorizontalScrollGallery
+            images={galleryImages.filter(img => img.category === "Foods")}
+            speed="medium"
+          />
+        </div>
+      </section>
+
+      {/* Events Gallery */}
+      <section id="events-section" className="py-8 pb-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center mb-6">
+            <div className="h-10 w-10 rounded-full bg-[#C45D3A] text-white flex items-center justify-center mr-3">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Events</h2>
+          </div>
+
+          <HorizontalScrollGallery
+            images={galleryImages.filter(img => img.category === "Events")}
+            speed="fast"
+            reverse={true}
+          />
         </div>
       </section>
 
