@@ -17,7 +17,7 @@ Macchiato Suite Dreams is a luxury hotel website built with modern web technolog
 - **Node.js**: JavaScript runtime
 - **Express**: Web framework for Node.js
 - **TypeScript**: Strongly typed programming language
-- **PostgreSQL**: Relational database (using Neon serverless Postgres)
+- **Supabase**: Backend-as-a-Service with PostgreSQL database
 - **JWT**: JSON Web Tokens for authentication
 
 ## Features
@@ -36,7 +36,7 @@ Macchiato Suite Dreams is a luxury hotel website built with modern web technolog
 - Booking system with availability checking
 - Amenities management
 - Contact form submission handling
-- PostgreSQL database integration with Neon
+- PostgreSQL database integration with Supabase
 
 ## Project Structure
 
@@ -61,7 +61,7 @@ The project follows a clean, modular architecture:
 
 - Node.js (v18 or higher)
 - Bun package manager
-- Neon PostgreSQL account (or any PostgreSQL database)
+- Supabase account (free tier is sufficient)
 
 ### Frontend Installation
 
@@ -88,11 +88,28 @@ cd backend
 # Install dependencies
 bun install
 
-# Create a .env file based on .env.example and add your database credentials
+# Create a .env file based on .env.example and add your Supabase credentials
+# SUPABASE_URL=your_supabase_url
+# SUPABASE_ANON_KEY=your_supabase_anon_key
+# SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Start the development server
 bun run dev
 ```
+
+### Supabase Setup
+
+1. Create a new project at [https://supabase.com](https://supabase.com)
+2. Get your API keys from the project settings
+3. Run the SQL commands from `backend/supabase-schema.sql` in the Supabase SQL Editor to set up the database schema
+4. Add your Supabase credentials to the `.env` file in the backend directory
+
+### Quick Start (Windows)
+
+For Windows users, we've included batch files to quickly start the application:
+
+1. Run `start-frontend.bat` to start the frontend development server
+2. Run `backend\start-backend.bat` to start the backend development server
 
 ## Building for Production
 
