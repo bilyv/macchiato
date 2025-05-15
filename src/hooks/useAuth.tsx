@@ -1,5 +1,7 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/components/ui/use-toast';
 
 interface User {
   id: number;
@@ -45,9 +47,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
 
+      // Check if response is not JSON (e.g., HTML error page)
+      const contentType = response.headers.get('content-type');
+      if (contentType && !contentType.includes('application/json')) {
+        console.error('Received non-JSON response:', await response.text());
+        throw new Error('Server error. Please try again later.');
+      }
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Login failed');
+        throw new Error(error.message || `Login failed with status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -57,6 +66,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       
+      toast({
+        title: "Login successful",
+        description: `Welcome back, ${userData.firstName}!`,
+      });
+      
       // Redirect based on role
       if (userData.role === 'admin') {
         navigate('/admin/dashboard');
@@ -65,6 +79,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -74,6 +93,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
     navigate('/admin/login');
   };
 
