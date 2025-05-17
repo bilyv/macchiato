@@ -2,7 +2,9 @@ import { ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
+import MobileAdminNav from './MobileAdminNav';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -11,6 +13,7 @@ interface AdminLayoutProps {
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { user, isLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Redirect to login if not authenticated or not an admin
@@ -35,12 +38,17 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <AdminSidebar />
+      {/* Show sidebar on desktop, hide on mobile */}
+      {!isMobile && <AdminSidebar />}
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader />
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <main className={`flex-1 overflow-y-auto p-6 bg-gray-50 ${isMobile ? 'pb-20' : ''}`}>
           {children}
         </main>
+
+        {/* Show bottom navigation on mobile */}
+        {isMobile && <MobileAdminNav />}
       </div>
     </div>
   );

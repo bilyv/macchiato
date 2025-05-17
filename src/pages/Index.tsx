@@ -4,30 +4,30 @@ import { ArrowRight, BedDouble, Coffee, Menu, Wifi, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from "@/components/ui/tabs";
-import { 
-  Carousel, 
-  CarouselContent, 
-  CarouselItem, 
-  CarouselNext, 
-  CarouselPrevious 
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious
 } from "@/components/ui/carousel";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
-  
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Navigation */}
       <header className="fixed w-full bg-white/90 backdrop-blur-sm z-50 border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="text-2xl font-serif font-bold text-[#8A5A44]">Macchiato Suites</div>
-          
+
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-6">
             <Link to="/" className="text-neutral-800 hover:text-[#C45D3A] transition-colors">Home</Link>
@@ -36,7 +36,7 @@ const Index = () => {
             <Link to="/" className="text-neutral-800 hover:text-[#C45D3A] transition-colors">Gallery</Link>
             <Link to="/" className="text-neutral-800 hover:text-[#C45D3A] transition-colors">Contact</Link>
           </nav>
-          
+
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-2">
             <Button className="bg-[#C45D3A] hover:bg-[#A74B2F] text-white">Book Now</Button>
@@ -80,7 +80,7 @@ const Index = () => {
               </SheetContent>
             </Sheet>
           </div>
-          
+
           {/* Desktop Book Now Button */}
           <Button className="hidden md:flex bg-[#C45D3A] hover:bg-[#A74B2F] text-white">Book Now</Button>
         </div>
@@ -96,7 +96,7 @@ const Index = () => {
               <span className="text-[#E8C3A3]">Luxurious</span> <span className="text-[#C45D3A]">Comfort</span> in the Heart of the City
             </h1>
             <p className="text-xl text-white/90 mb-8">
-              Experience unparalleled elegance and tranquility at Macchiato Suites, 
+              Experience unparalleled elegance and tranquility at Macchiato Suites,
               where every stay is crafted for perfection.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -132,7 +132,7 @@ const Index = () => {
                 Contact
               </TabsTrigger>
             </TabsList>
-            
+
             {/* Home Tab Content */}
             <TabsContent value="home" className="animate-fade-in">
               <div className="max-w-3xl mx-auto text-center mb-12">
@@ -140,8 +140,8 @@ const Index = () => {
                   Welcome to Macchiato Suites
                 </h2>
                 <p className="text-lg text-neutral-600">
-                  Nestled in the vibrant heart of the city, Macchiato Suites offers a perfect blend of luxury, comfort, 
-                  and exceptional service. Whether you're visiting for business or pleasure, our elegant accommodations 
+                  Nestled in the vibrant heart of the city, Macchiato Suites offers a perfect blend of luxury, comfort,
+                  and exceptional service. Whether you're visiting for business or pleasure, our elegant accommodations
                   and world-class amenities ensure an unforgettable stay.
                 </p>
               </div>
@@ -154,7 +154,7 @@ const Index = () => {
                     <div>
                       <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Premium Accommodations</h3>
                       <p className="text-neutral-600">
-                        Our rooms and suites are meticulously designed with your comfort in mind, 
+                        Our rooms and suites are meticulously designed with your comfort in mind,
                         featuring plush bedding, elegant décor, and all the modern amenities you need.
                       </p>
                     </div>
@@ -166,7 +166,7 @@ const Index = () => {
                     <div>
                       <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Fine Dining Experience</h3>
                       <p className="text-neutral-600">
-                        Indulge in exceptional cuisine at our restaurant, where our chefs create 
+                        Indulge in exceptional cuisine at our restaurant, where our chefs create
                         memorable meals using the finest locally-sourced ingredients.
                       </p>
                     </div>
@@ -178,22 +178,22 @@ const Index = () => {
                     <div>
                       <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Comprehensive Amenities</h3>
                       <p className="text-neutral-600">
-                        From our state-of-the-art fitness center to our relaxing spa services, 
+                        From our state-of-the-art fitness center to our relaxing spa services,
                         we provide everything you need for a comfortable and enjoyable stay.
                       </p>
                     </div>
                   </div>
                 </div>
                 <div className="rounded-lg overflow-hidden shadow-lg">
-                  <img 
-                    src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070" 
-                    alt="Hotel Lobby" 
+                  <img
+                    src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070"
+                    alt="Hotel Lobby"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-in-out"
                   />
                 </div>
               </div>
             </TabsContent>
-            
+
             {/* Rooms Tab Content */}
             <TabsContent value="rooms" className="animate-fade-in">
               <div className="max-w-3xl mx-auto text-center mb-12">
@@ -201,19 +201,19 @@ const Index = () => {
                   Our Luxury Accommodations
                 </h2>
                 <p className="text-lg text-neutral-600">
-                  Discover our range of thoughtfully designed rooms and suites, each offering a unique blend of comfort, 
+                  Discover our range of thoughtfully designed rooms and suites, each offering a unique blend of comfort,
                   style, and modern conveniences to ensure a restful stay.
                 </p>
               </div>
-              
+
               <Carousel className="w-full max-w-5xl mx-auto">
                 <CarouselContent>
                   <CarouselItem className="md:basis-1/2 lg:basis-1/3">
                     <div className="group p-1">
                       <div className="overflow-hidden rounded-lg">
-                        <img 
-                          src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070" 
-                          alt="Deluxe Room" 
+                        <img
+                          src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"
+                          alt="Deluxe Room"
                           className="w-full aspect-[4/3] object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
                         />
                       </div>
@@ -227,9 +227,9 @@ const Index = () => {
                   <CarouselItem className="md:basis-1/2 lg:basis-1/3">
                     <div className="group p-1">
                       <div className="overflow-hidden rounded-lg">
-                        <img 
-                          src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070" 
-                          alt="Executive Suite" 
+                        <img
+                          src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070"
+                          alt="Executive Suite"
                           className="w-full aspect-[4/3] object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
                         />
                       </div>
@@ -243,9 +243,9 @@ const Index = () => {
                   <CarouselItem className="md:basis-1/2 lg:basis-1/3">
                     <div className="group p-1">
                       <div className="overflow-hidden rounded-lg">
-                        <img 
-                          src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070" 
-                          alt="Penthouse Suite" 
+                        <img
+                          src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070"
+                          alt="Penthouse Suite"
                           className="w-full aspect-[4/3] object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
                         />
                       </div>
@@ -259,9 +259,9 @@ const Index = () => {
                   <CarouselItem className="md:basis-1/2 lg:basis-1/3">
                     <div className="group p-1">
                       <div className="overflow-hidden rounded-lg">
-                        <img 
-                          src="https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2074" 
-                          alt="Family Suite" 
+                        <img
+                          src="https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2074"
+                          alt="Family Suite"
                           className="w-full aspect-[4/3] object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
                         />
                       </div>
@@ -278,14 +278,14 @@ const Index = () => {
                   <CarouselNext className="relative static translate-y-0" />
                 </div>
               </Carousel>
-              
+
               <div className="text-center mt-12">
                 <Button className="bg-[#8A5A44] hover:bg-[#6B4636] text-white">
                   View All Accommodations <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </TabsContent>
-            
+
             {/* Amenities Tab Content */}
             <TabsContent value="amenities" className="animate-fade-in">
               <div className="max-w-3xl mx-auto text-center mb-12">
@@ -296,7 +296,7 @@ const Index = () => {
                   At Macchiato Suites, we've thought of everything to make your stay as comfortable and enjoyable as possible.
                 </p>
               </div>
-              
+
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <div className="bg-[#F9F5F2] rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-4">
@@ -307,7 +307,7 @@ const Index = () => {
                     Our on-site restaurant offers an exquisite dining experience with a menu featuring both local and international cuisine.
                   </p>
                 </div>
-                
+
                 <div className="bg-[#F9F5F2] rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 text-[#C45D3A]">
@@ -325,7 +325,7 @@ const Index = () => {
                     Indulge in rejuvenating treatments at our spa, featuring massages, facials, and other wellness services.
                   </p>
                 </div>
-                
+
                 <div className="bg-[#F9F5F2] rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 text-[#C45D3A]">
@@ -338,7 +338,7 @@ const Index = () => {
                     Enjoy our temperature-controlled indoor swimming pool with a relaxing lounge area.
                   </p>
                 </div>
-                
+
                 <div className="bg-[#F9F5F2] rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 text-[#C45D3A]">
@@ -353,7 +353,7 @@ const Index = () => {
                     Stay active in our modern fitness center equipped with the latest cardio and strength training equipment.
                   </p>
                 </div>
-                
+
                 <div className="bg-[#F9F5F2] rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 text-[#C45D3A]">
@@ -369,7 +369,7 @@ const Index = () => {
                     Our fully-equipped business center offers everything you need for productive work during your stay.
                   </p>
                 </div>
-                
+
                 <div className="bg-[#F9F5F2] rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-4">
                     <Wifi className="h-7 w-7 text-[#C45D3A]" />
@@ -381,7 +381,7 @@ const Index = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
             {/* Gallery Tab Content */}
             <TabsContent value="gallery" className="animate-fade-in">
               <div className="max-w-3xl mx-auto text-center mb-12">
@@ -392,7 +392,7 @@ const Index = () => {
                   Explore our elegant spaces through our carefully curated photo gallery showcasing the beauty of Macchiato Suites.
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {[
                   "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070",
@@ -405,16 +405,16 @@ const Index = () => {
                   "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=2070"
                 ].map((image, index) => (
                   <div key={index} className="overflow-hidden rounded-lg group">
-                    <img 
-                      src={image} 
-                      alt={`Gallery image ${index + 1}`} 
+                    <img
+                      src={image}
+                      alt={`Gallery image ${index + 1}`}
                       className="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
                     />
                   </div>
                 ))}
               </div>
             </TabsContent>
-            
+
             {/* Contact Tab Content */}
             <TabsContent value="contact" className="animate-fade-in">
               <div className="max-w-3xl mx-auto text-center mb-12">
@@ -425,7 +425,7 @@ const Index = () => {
                   We're here to assist you. Reach out to us for reservations, inquiries, or any assistance you may need.
                 </p>
               </div>
-              
+
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
                   <h3 className="text-xl font-semibold mb-4 text-[#8A5A44]">Get in Touch</h3>
@@ -440,7 +440,7 @@ const Index = () => {
                         <p className="text-neutral-600">123 Luxury Avenue, New York, NY 10001</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-[#C45D3A] mt-1">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -450,7 +450,7 @@ const Index = () => {
                         <p className="text-neutral-600">+1 (555) 123-4567</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-[#C45D3A] mt-1">
                         <rect width="20" height="16" x="2" y="4" rx="2" />
@@ -461,7 +461,7 @@ const Index = () => {
                         <p className="text-neutral-600">info@macchiatosuites.com</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-[#C45D3A] mt-1">
                         <circle cx="12" cy="12" r="10" />
@@ -478,52 +478,15 @@ const Index = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-[#F9F5F2] p-6 rounded-lg">
                   <h3 className="text-xl font-semibold mb-4 text-[#8A5A44]">Send Us a Message</h3>
-                  <form className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-neutral-600 mb-1">Name</label>
-                        <input 
-                          type="text" 
-                          id="name" 
-                          className="w-full rounded-md border-neutral-300 focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
-                          placeholder="Your name"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-neutral-600 mb-1">Email</label>
-                        <input 
-                          type="email" 
-                          id="email" 
-                          className="w-full rounded-md border-neutral-300 focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
-                          placeholder="Your email"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label htmlFor="subject" className="block text-sm font-medium text-neutral-600 mb-1">Subject</label>
-                      <input 
-                        type="text" 
-                        id="subject" 
-                        className="w-full rounded-md border-neutral-300 focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
-                        placeholder="Subject"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="message" className="block text-sm font-medium text-neutral-600 mb-1">Message</label>
-                      <textarea 
-                        id="message" 
-                        rows={4} 
-                        className="w-full rounded-md border-neutral-300 focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
-                        placeholder="Your message"
-                      ></textarea>
-                    </div>
-                    <Button type="submit" className="w-full bg-[#C45D3A] hover:bg-[#A74B2F] text-white">
-                      Send Message
-                    </Button>
-                  </form>
+                  <p className="text-neutral-600 mb-4">
+                    Please visit our <Link to="/contact" className="text-[#C45D3A] hover:underline">Contact page</Link> to send us a message.
+                  </p>
+                  <Button asChild className="w-full bg-[#C45D3A] hover:bg-[#A74B2F] text-white">
+                    <Link to="/contact">Go to Contact Page</Link>
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -537,7 +500,7 @@ const Index = () => {
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-12 text-[#8A5A44]">
             Why Choose Macchiato Suites?
           </h2>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-lg shadow-sm flex flex-col items-center text-center">
               <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-6">
@@ -548,7 +511,7 @@ const Index = () => {
                 Our spacious suites are designed for comfort with premium bedding and elegant decor.
               </p>
             </div>
-            
+
             <div className="bg-white p-8 rounded-lg shadow-sm flex flex-col items-center text-center">
               <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-6">
                 <Coffee className="h-7 w-7 text-[#C45D3A]" />
@@ -558,7 +521,7 @@ const Index = () => {
                 Enjoy our award-winning restaurant serving gourmet meals made from local ingredients.
               </p>
             </div>
-            
+
             <div className="bg-white p-8 rounded-lg shadow-sm flex flex-col items-center text-center">
               <div className="h-14 w-14 rounded-full bg-[#EEDFD0] flex items-center justify-center mb-6">
                 <Wifi className="h-7 w-7 text-[#C45D3A]" />
@@ -571,7 +534,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Room Showcase */}
       <section className="py-16">
         <div className="container mx-auto px-4">
@@ -581,14 +544,14 @@ const Index = () => {
           <p className="text-lg text-neutral-600 mb-10">
             Discover our collection of thoughtfully designed accommodations
           </p>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Room Card 1 */}
             <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
               <div className="h-64 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070" 
-                  alt="Deluxe Suite" 
+                <img
+                  src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"
+                  alt="Deluxe Suite"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -603,13 +566,13 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Room Card 2 */}
             <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
               <div className="h-64 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070" 
-                  alt="Executive Suite" 
+                <img
+                  src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070"
+                  alt="Executive Suite"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -624,13 +587,13 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Room Card 3 */}
             <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
               <div className="h-64 overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070" 
-                  alt="Penthouse Suite" 
+                <img
+                  src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070"
+                  alt="Penthouse Suite"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -646,7 +609,7 @@ const Index = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-12 text-center">
             <Button className="bg-[#8A5A44] hover:bg-[#6B4636] text-white">
               View All Rooms <ArrowRight className="ml-2 h-4 w-4" />
@@ -654,7 +617,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-      
+
       {/* CTA Section */}
       <section className="py-20 bg-[#C45D3A] text-white">
         <div className="container mx-auto px-4 text-center">
@@ -669,7 +632,7 @@ const Index = () => {
           </Button>
         </div>
       </section>
-      
+
       {/* Footer */}
       <footer className="bg-[#332A27] text-white/80 py-12">
         <div className="container mx-auto px-4">
@@ -680,7 +643,7 @@ const Index = () => {
                 Luxury accommodations with exceptional service and unforgettable experiences.
               </p>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2">
@@ -690,7 +653,7 @@ const Index = () => {
                 <li><Link to="/" className="hover:text-white transition-colors">Amenities</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Contact</h4>
               <ul className="space-y-2">
@@ -700,14 +663,14 @@ const Index = () => {
                 <li>info@macchiatosuites.com</li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Newsletter</h4>
               <p className="mb-4">Subscribe to receive special offers and updates</p>
               <div className="flex">
-                <input 
-                  type="email" 
-                  placeholder="Your email" 
+                <input
+                  type="email"
+                  placeholder="Your email"
                   className="px-4 py-2 text-neutral-800 rounded-l-md w-full focus:outline-none"
                 />
                 <Button className="bg-[#C45D3A] hover:bg-[#A74B2F] rounded-l-none">
@@ -716,7 +679,7 @@ const Index = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="border-t border-white/20 mt-12 pt-6 text-center text-sm">
             © {new Date().getFullYear()} Macchiato Suites. All rights reserved.
           </div>

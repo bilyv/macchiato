@@ -1,11 +1,106 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { api } from "@/lib/api";
 
 const Contact = () => {
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+    phone: ""
+  });
+
+  // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form validation errors
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Handle input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+
+    // Clear error when user types
+    if (errors[id]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[id];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid";
+    }
+
+    if (!formData.subject.trim()) {
+      newErrors.subject = "Subject is required";
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required";
+    } else if (formData.message.trim().length < 10) {
+      newErrors.message = "Message must be at least 10 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error("Please fix the errors in the form");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Submit form data to API
+      await api.contact.submit(formData);
+
+      // Show success message
+      toast.success("Your message has been sent successfully. We will get back to you soon.");
+
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+        phone: ""
+      });
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      toast.error("Failed to send message. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -106,25 +201,33 @@ const Contact = () => {
 
             <div className="bg-[#F9F5F2] p-6 rounded-lg">
               <h3 className="text-xl font-semibold mb-4 text-[#8A5A44]">Send Us a Message</h3>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name" className="text-sm font-medium text-neutral-600 mb-1">Name</Label>
                     <Input
                       type="text"
                       id="name"
-                      className="w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20 ${errors.name ? 'border-red-500' : ''}`}
                       placeholder="Your name"
+                      disabled={isSubmitting}
                     />
+                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                   </div>
                   <div>
                     <Label htmlFor="email" className="text-sm font-medium text-neutral-600 mb-1">Email</Label>
                     <Input
                       type="email"
                       id="email"
-                      className="w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={`w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20 ${errors.email ? 'border-red-500' : ''}`}
                       placeholder="Your email"
+                      disabled={isSubmitting}
                     />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                 </div>
                 <div>
@@ -132,21 +235,45 @@ const Contact = () => {
                   <Input
                     type="text"
                     id="subject"
-                    className="w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className={`w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20 ${errors.subject ? 'border-red-500' : ''}`}
                     placeholder="Subject"
+                    disabled={isSubmitting}
+                  />
+                  {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="phone" className="text-sm font-medium text-neutral-600 mb-1">Phone (Optional)</Label>
+                  <Input
+                    type="tel"
+                    id="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
+                    placeholder="Your phone number"
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
                   <Label htmlFor="message" className="text-sm font-medium text-neutral-600 mb-1">Message</Label>
                   <Textarea
                     id="message"
+                    value={formData.message}
+                    onChange={handleChange}
                     rows={4}
-                    className="w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20"
+                    className={`w-full focus:border-[#C45D3A] focus:ring focus:ring-[#C45D3A] focus:ring-opacity-20 ${errors.message ? 'border-red-500' : ''}`}
                     placeholder="Your message"
+                    disabled={isSubmitting}
                   />
+                  {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
                 </div>
-                <Button type="submit" className="w-full bg-[#C45D3A] hover:bg-[#A74B2F] text-white">
-                  Send Message
+                <Button
+                  type="submit"
+                  className="w-full bg-[#C45D3A] hover:bg-[#A74B2F] text-white"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
                 </Button>
               </form>
             </div>

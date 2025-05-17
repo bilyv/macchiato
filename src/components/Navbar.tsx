@@ -2,54 +2,56 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import NotificationBar from "./NotificationBar";
 
 const Navbar = () => {
   const location = useLocation();
-  
+
   // Function to check if a link is active
   const isActive = (path: string) => {
     return location.pathname === path;
   };
-  
+
   return (
-    <header className="fixed w-full bg-white/90 backdrop-blur-sm z-50 border-b">
+    <header className="fixed w-full bg-white/90 backdrop-blur-sm z-50 border-b flex flex-col">
+      <NotificationBar className="w-full" />
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="text-2xl font-serif font-bold text-[#8A5A44]">Macchiato Suites</Link>
-        
+
         {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-6">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className={`transition-colors ${isActive('/') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
           >
             Home
           </Link>
-          <Link 
-            to="/rooms" 
+          <Link
+            to="/rooms"
             className={`transition-colors ${isActive('/rooms') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
           >
             Rooms
           </Link>
-          <Link 
-            to="/amenities" 
+          <Link
+            to="/amenities"
             className={`transition-colors ${isActive('/amenities') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
           >
             Amenities
           </Link>
-          <Link 
-            to="/gallery" 
+          <Link
+            to="/gallery"
             className={`transition-colors ${isActive('/gallery') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
           >
             Gallery
           </Link>
-          <Link 
-            to="/contact" 
+          <Link
+            to="/contact"
             className={`transition-colors ${isActive('/contact') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
           >
             Contact
           </Link>
         </nav>
-        
+
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center gap-2">
           <Button className="bg-[#C45D3A] hover:bg-[#A74B2F] text-white">Book Now</Button>
@@ -71,40 +73,40 @@ const Navbar = () => {
                 </div>
                 <nav className="flex flex-col space-y-4">
                   <SheetClose asChild>
-                    <Link 
-                      to="/" 
+                    <Link
+                      to="/"
                       className={`text-lg font-medium transition-colors ${isActive('/') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
                     >
                       Home
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Link 
-                      to="/rooms" 
+                    <Link
+                      to="/rooms"
                       className={`text-lg font-medium transition-colors ${isActive('/rooms') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
                     >
                       Rooms
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Link 
-                      to="/amenities" 
+                    <Link
+                      to="/amenities"
                       className={`text-lg font-medium transition-colors ${isActive('/amenities') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
                     >
                       Amenities
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Link 
-                      to="/gallery" 
+                    <Link
+                      to="/gallery"
                       className={`text-lg font-medium transition-colors ${isActive('/gallery') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
                     >
                       Gallery
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Link 
-                      to="/contact" 
+                    <Link
+                      to="/contact"
                       className={`text-lg font-medium transition-colors ${isActive('/contact') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
                     >
                       Contact
@@ -118,7 +120,7 @@ const Navbar = () => {
             </SheetContent>
           </Sheet>
         </div>
-        
+
         {/* Desktop Book Now Button */}
         <Button className="hidden md:flex bg-[#C45D3A] hover:bg-[#A74B2F] text-white">Book Now</Button>
       </div>

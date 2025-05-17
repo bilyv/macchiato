@@ -17,7 +17,7 @@ Macchiato Suite Dreams is a luxury hotel website built with modern web technolog
 - **Node.js**: JavaScript runtime
 - **Express**: Web framework for Node.js
 - **TypeScript**: Strongly typed programming language
-- **Supabase**: Backend-as-a-Service with PostgreSQL database
+- **PostgreSQL**: Open-source relational database
 - **JWT**: JSON Web Tokens for authentication
 
 ## Features
@@ -36,7 +36,7 @@ Macchiato Suite Dreams is a luxury hotel website built with modern web technolog
 - Booking system with availability checking
 - Amenities management
 - Contact form submission handling
-- PostgreSQL database integration with Supabase
+- Direct PostgreSQL database integration
 
 ## Project Structure
 
@@ -61,7 +61,7 @@ The project follows a clean, modular architecture:
 
 - Node.js (v18 or higher)
 - Bun package manager
-- Supabase account (free tier is sufficient)
+- PostgreSQL database
 
 ### Frontend Installation
 
@@ -88,21 +88,24 @@ cd backend
 # Install dependencies
 bun install
 
-# Create a .env file based on .env.example and add your Supabase credentials
-# SUPABASE_URL=your_supabase_url
-# SUPABASE_ANON_KEY=your_supabase_anon_key
-# SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+# Create a .env file based on .env.example and add your PostgreSQL credentials
+# PGHOST=localhost
+# PGUSER=postgres
+# PGDATABASE=macchiato_suites
+# PGPASSWORD=your_password
+# PGPORT=5432
+# JWT_SECRET=your_jwt_secret
 
 # Start the development server
 bun run dev
 ```
 
-### Supabase Setup
+### PostgreSQL Setup
 
-1. Create a new project at [https://supabase.com](https://supabase.com)
-2. Get your API keys from the project settings
-3. Run the SQL commands from `backend/supabase-schema.sql` in the Supabase SQL Editor to set up the database schema
-4. Add your Supabase credentials to the `.env` file in the backend directory
+1. Install PostgreSQL on your local machine or use a cloud-hosted PostgreSQL service
+2. Create a new database named `macchiato_suites`
+3. Run the SQL commands from `backend/schema.sql` to set up the database schema
+4. Add your PostgreSQL credentials to the `.env` file in the backend directory
 
 ### Quick Start (Windows)
 

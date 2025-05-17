@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { supabaseClient, supabaseAdmin } from '../config/supabase.js';
+import { query } from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 // Validation schemas
@@ -15,22 +15,17 @@ const contactSchema = z.object({
 // Get all contact messages (admin only)
 export const getAllMessages = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('contact_messages')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new AppError('Error fetching contact messages', 500);
-    }
+    const result = await query(
+      'SELECT * FROM contact_messages ORDER BY created_at DESC'
+    );
 
     res.status(200).json({
       status: 'success',
-      results: data.length,
-      data
+      results: result.rowCount,
+      data: result.rows
     });
   } catch (error) {
-    next(error);
+    next(new AppError('Error fetching contact messages', 500));
   }
 };
 
@@ -39,25 +34,25 @@ export const getMessageById = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
 
-    const { data, error } = await supabaseAdmin
-      .from('contact_messages')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const result = await query(
+      'SELECT * FROM contact_messages WHERE id = $1',
+      [id]
+    );
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        throw new AppError('Message not found', 404);
-      }
-      throw new AppError('Error fetching message', 500);
+    if (result.rowCount === 0) {
+      throw new AppError('Message not found', 404);
     }
 
     res.status(200).json({
       status: 'success',
-      data
+      data: result.rows[0]
     });
   } catch (error) {
-    next(error);
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error fetching message', 500));
+    }
   }
 };
 
@@ -68,26 +63,32 @@ export const createMessage = async (req: Request, res: Response, next: NextFunct
     const messageData = contactSchema.parse(req.body);
 
     // Insert message into database
-    const { data, error } = await supabaseClient
-      .from('contact_messages')
-      .insert({
-        ...messageData,
-        is_read: false
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new AppError('Error submitting contact message', 500);
-    }
+    const result = await query(
+      `INSERT INTO contact_messages (
+        name, email, subject, message, phone, is_read
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *`,
+      [
+        messageData.name,
+        messageData.email,
+        messageData.subject,
+        messageData.message,
+        messageData.phone || null,
+        false
+      ]
+    );
 
     res.status(201).json({
       status: 'success',
       message: 'Your message has been sent successfully. We will get back to you soon.',
-      data
+      data: result.rows[0]
     });
   } catch (error) {
-    next(error);
+    if (error instanceof z.ZodError) {
+      next(new AppError(error.message, 400));
+    } else {
+      next(new AppError('Error submitting contact message', 500));
+    }
   }
 };
 
@@ -97,23 +98,28 @@ export const markAsRead = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     // Update message in database
-    const { data, error } = await supabaseAdmin
-      .from('contact_messages')
-      .update({ is_read: true })
-      .eq('id', id)
-      .select()
-      .single();
+    const result = await query(
+      `UPDATE contact_messages
+       SET is_read = true, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
 
-    if (error) {
-      throw new AppError('Error updating message', 500);
+    if (result.rowCount === 0) {
+      throw new AppError('Message not found', 404);
     }
 
     res.status(200).json({
       status: 'success',
-      data
+      data: result.rows[0]
     });
   } catch (error) {
-    next(error);
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error updating message', 500));
+    }
   }
 };
 
@@ -123,13 +129,13 @@ export const deleteMessage = async (req: Request, res: Response, next: NextFunct
     const { id } = req.params;
 
     // Delete message from database
-    const { error } = await supabaseAdmin
-      .from('contact_messages')
-      .delete()
-      .eq('id', id);
+    const result = await query(
+      'DELETE FROM contact_messages WHERE id = $1 RETURNING id',
+      [id]
+    );
 
-    if (error) {
-      throw new AppError('Error deleting message', 500);
+    if (result.rowCount === 0) {
+      throw new AppError('Message not found', 404);
     }
 
     res.status(204).json({
@@ -137,6 +143,10 @@ export const deleteMessage = async (req: Request, res: Response, next: NextFunct
       data: null
     });
   } catch (error) {
-    next(error);
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error deleting message', 500));
+    }
   }
 };

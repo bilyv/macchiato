@@ -1,10 +1,10 @@
 # Macchiato Suite Dreams Backend
 
-This is the backend API for the Macchiato Suite Dreams hotel website, built with Express, TypeScript, and Supabase.
+This is the backend API for the Macchiato Suite Dreams hotel website, built with Express, TypeScript, and PostgreSQL.
 
 ## Features
 
-- User authentication and authorization with Supabase Auth
+- User authentication and authorization with JWT
 - RESTful API for hotel operations
 - Room management
 - Booking system
@@ -17,7 +17,7 @@ This is the backend API for the Macchiato Suite Dreams hotel website, built with
 
 - Node.js (v18 or higher)
 - Bun package manager
-- Supabase account
+- PostgreSQL database
 
 ### Installation
 
@@ -31,11 +31,13 @@ This is the backend API for the Macchiato Suite Dreams hotel website, built with
    bun install
    ```
 
-3. Create a `.env` file based on `.env.example` and add your Supabase credentials:
+3. Create a `.env` file based on `.env.example` and add your PostgreSQL credentials:
    ```
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   PGHOST=localhost
+   PGUSER=postgres
+   PGDATABASE=macchiato_suites
+   PGPASSWORD=your_password
+   PGPORT=5432
    JWT_SECRET=your_jwt_secret
    JWT_EXPIRES_IN=7d
    PORT=3000
@@ -48,50 +50,29 @@ This is the backend API for the Macchiato Suite Dreams hotel website, built with
    bun run dev
    ```
 
-## Setting Up Supabase
+## Setting Up PostgreSQL Database
 
-1. Create a new Supabase project at [https://supabase.com](https://supabase.com)
+1. Install PostgreSQL on your local machine or use a cloud-hosted PostgreSQL service
 
-2. Get your Supabase URL and API keys from the project settings
+2. Create a new database named `macchiato_suites`
 
-3. Set up the following tables in your Supabase database:
+3. Set up the following tables in your PostgreSQL database:
 
 ### Users Table
 
 ```sql
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE users (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Enable Row Level Security
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Users can view their own profile" 
-  ON users FOR SELECT 
-  USING (auth.uid() = id);
-
-CREATE POLICY "Admin can view all profiles" 
-  ON users FOR SELECT 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Users can update their own profile" 
-  ON users FOR UPDATE 
-  USING (auth.uid() = id);
-
-CREATE POLICY "Admin can update all profiles" 
-  ON users FOR UPDATE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
 ```
 
 ### Rooms Table
@@ -111,32 +92,6 @@ CREATE TABLE rooms (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Enable Row Level Security
-ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Anyone can view rooms" 
-  ON rooms FOR SELECT 
-  USING (true);
-
-CREATE POLICY "Admin can insert rooms" 
-  ON rooms FOR INSERT 
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Admin can update rooms" 
-  ON rooms FOR UPDATE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Admin can delete rooms" 
-  ON rooms FOR DELETE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
 ```
 
 ### Bookings Table
@@ -155,34 +110,6 @@ CREATE TABLE bookings (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Enable Row Level Security
-ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Users can view their own bookings" 
-  ON bookings FOR SELECT 
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Admin can view all bookings" 
-  ON bookings FOR SELECT 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Users can create bookings" 
-  ON bookings FOR INSERT 
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own bookings" 
-  ON bookings FOR UPDATE 
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Admin can update all bookings" 
-  ON bookings FOR UPDATE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
 ```
 
 ### Amenities Table
@@ -199,32 +126,6 @@ CREATE TABLE amenities (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Enable Row Level Security
-ALTER TABLE amenities ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Anyone can view amenities" 
-  ON amenities FOR SELECT 
-  USING (true);
-
-CREATE POLICY "Admin can insert amenities" 
-  ON amenities FOR INSERT 
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Admin can update amenities" 
-  ON amenities FOR UPDATE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Admin can delete amenities" 
-  ON amenities FOR DELETE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
 ```
 
 ### Contact Messages Table
@@ -241,32 +142,6 @@ CREATE TABLE contact_messages (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Enable Row Level Security
-ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Anyone can insert contact messages" 
-  ON contact_messages FOR INSERT 
-  WITH CHECK (true);
-
-CREATE POLICY "Admin can view contact messages" 
-  ON contact_messages FOR SELECT 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Admin can update contact messages" 
-  ON contact_messages FOR UPDATE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
-
-CREATE POLICY "Admin can delete contact messages" 
-  ON contact_messages FOR DELETE 
-  USING (EXISTS (
-    SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  ));
 ```
 
 ## API Endpoints

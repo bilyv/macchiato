@@ -12,7 +12,7 @@ export const API_BASE_URL = '/api';
 const getToken = (): string | null => {
   const user = localStorage.getItem('user');
   if (!user) return null;
-  
+
   try {
     const userData = JSON.parse(user);
     return userData.token;
@@ -42,12 +42,12 @@ export const apiRequest = async <T>(endpoint: string, options: ApiOptions = {}):
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `API request failed with status ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('API request error:', error);
@@ -65,15 +65,15 @@ export const api = {
     update: (id: number, data: any) => apiRequest<any>(`/rooms/${id}`, { method: 'PUT', body: data }),
     delete: (id: number) => apiRequest<any>(`/rooms/${id}`, { method: 'DELETE' }),
   },
-  
+
   // Bookings
   bookings: {
     getAll: () => apiRequest<any>('/bookings'),
     getById: (id: number) => apiRequest<any>(`/bookings/${id}`),
-    updateStatus: (id: number, status: string) => 
+    updateStatus: (id: number, status: string) =>
       apiRequest<any>(`/bookings/${id}/status`, { method: 'PATCH', body: { status } }),
   },
-  
+
   // Amenities
   amenities: {
     getAll: () => apiRequest<any>('/amenities'),
@@ -82,13 +82,23 @@ export const api = {
     update: (id: number, data: any) => apiRequest<any>(`/amenities/${id}`, { method: 'PUT', body: data }),
     delete: (id: number) => apiRequest<any>(`/amenities/${id}`, { method: 'DELETE' }),
   },
-  
+
   // Contact messages
   contact: {
     getAll: () => apiRequest<any>('/contact'),
     getById: (id: number) => apiRequest<any>(`/contact/${id}`),
     markAsRead: (id: number) => apiRequest<any>(`/contact/${id}/read`, { method: 'PATCH' }),
     delete: (id: number) => apiRequest<any>(`/contact/${id}`, { method: 'DELETE' }),
+    submit: (data: any) => apiRequest<any>('/contact', { method: 'POST', body: data }),
+  },
+
+  // Notification bars
+  notificationBars: {
+    getAll: (activeOnly: boolean = false) => apiRequest<any>(`/notification-bars${activeOnly ? '?active_only=true' : ''}`),
+    getById: (id: string) => apiRequest<any>(`/notification-bars/${id}`),
+    create: (data: any) => apiRequest<any>('/notification-bars', { method: 'POST', body: data }),
+    update: (id: string, data: any) => apiRequest<any>(`/notification-bars/${id}`, { method: 'PUT', body: data }),
+    delete: (id: string) => apiRequest<any>(`/notification-bars/${id}`, { method: 'DELETE' }),
   },
 };
 

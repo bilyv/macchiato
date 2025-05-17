@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from './errorHandler.js';
-import { supabaseAdmin } from '../config/supabase.js';
+import { query } from '../config/database.js';
 
 // Extend Express Request type to include user property
 declare global {
@@ -43,16 +43,17 @@ export const authenticate = async (
       role: string;
     };
 
-    // Check if user exists in Supabase
-    const { data: user, error } = await supabaseAdmin
-      .from('users')
-      .select('id, email, role')
-      .eq('id', decoded.id)
-      .single();
+    // Check if user exists in database
+    const result = await query(
+      'SELECT id, email, role FROM users WHERE id = $1',
+      [decoded.id]
+    );
 
-    if (error || !user) {
+    if (result.rowCount === 0) {
       throw new AppError('User not found or token invalid', 401);
     }
+
+    const user = result.rows[0];
 
     // Attach user to request object
     req.user = {

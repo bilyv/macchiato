@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { supabaseClient, supabaseAdmin } from '../config/supabase.js';
+import { query } from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 // Validation schemas
@@ -16,22 +16,17 @@ const amenitySchema = z.object({
 // Get all amenities
 export const getAllAmenities = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { data, error } = await supabaseClient
-      .from('amenities')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) {
-      throw new AppError('Error fetching amenities', 500);
-    }
+    const result = await query(
+      'SELECT * FROM amenities ORDER BY name ASC'
+    );
 
     res.status(200).json({
       status: 'success',
-      results: data.length,
-      data
+      results: result.rowCount,
+      data: result.rows
     });
   } catch (error) {
-    next(error);
+    next(new AppError('Error fetching amenities', 500));
   }
 };
 
@@ -40,25 +35,25 @@ export const getAmenityById = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
 
-    const { data, error } = await supabaseClient
-      .from('amenities')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const result = await query(
+      'SELECT * FROM amenities WHERE id = $1',
+      [id]
+    );
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        throw new AppError('Amenity not found', 404);
-      }
-      throw new AppError('Error fetching amenity', 500);
+    if (result.rowCount === 0) {
+      throw new AppError('Amenity not found', 404);
     }
 
     res.status(200).json({
       status: 'success',
-      data
+      data: result.rows[0]
     });
   } catch (error) {
-    next(error);
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error fetching amenity', 500));
+    }
   }
 };
 
@@ -69,22 +64,31 @@ export const createAmenity = async (req: Request, res: Response, next: NextFunct
     const amenityData = amenitySchema.parse(req.body);
 
     // Insert amenity into database
-    const { data, error } = await supabaseAdmin
-      .from('amenities')
-      .insert(amenityData)
-      .select()
-      .single();
-
-    if (error) {
-      throw new AppError('Error creating amenity', 500);
-    }
+    const result = await query(
+      `INSERT INTO amenities (
+        name, description, category, icon, image_url, is_featured
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *`,
+      [
+        amenityData.name,
+        amenityData.description,
+        amenityData.category,
+        amenityData.icon || null,
+        amenityData.image_url || null,
+        amenityData.is_featured
+      ]
+    );
 
     res.status(201).json({
       status: 'success',
-      data
+      data: result.rows[0]
     });
   } catch (error) {
-    next(error);
+    if (error instanceof z.ZodError) {
+      next(new AppError(error.message, 400));
+    } else {
+      next(new AppError('Error creating amenity', 500));
+    }
   }
 };
 
@@ -96,24 +100,79 @@ export const updateAmenity = async (req: Request, res: Response, next: NextFunct
     // Validate request body
     const amenityData = amenitySchema.partial().parse(req.body);
 
-    // Update amenity in database
-    const { data, error } = await supabaseAdmin
-      .from('amenities')
-      .update(amenityData)
-      .eq('id', id)
-      .select()
-      .single();
+    // Build the SET part of the query dynamically based on provided fields
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
 
-    if (error) {
-      throw new AppError('Error updating amenity', 500);
+    // Add each field that exists in amenityData to the updates array
+    if (amenityData.name !== undefined) {
+      updates.push(`name = $${paramIndex++}`);
+      values.push(amenityData.name);
+    }
+    if (amenityData.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(amenityData.description);
+    }
+    if (amenityData.category !== undefined) {
+      updates.push(`category = $${paramIndex++}`);
+      values.push(amenityData.category);
+    }
+    if (amenityData.icon !== undefined) {
+      updates.push(`icon = $${paramIndex++}`);
+      values.push(amenityData.icon);
+    }
+    if (amenityData.image_url !== undefined) {
+      updates.push(`image_url = $${paramIndex++}`);
+      values.push(amenityData.image_url);
+    }
+    if (amenityData.is_featured !== undefined) {
+      updates.push(`is_featured = $${paramIndex++}`);
+      values.push(amenityData.is_featured);
+    }
+
+    // Add updated_at to always update the timestamp
+    updates.push(`updated_at = NOW()`);
+
+    // If no fields to update, return the current amenity
+    if (updates.length === 1) { // Only updated_at
+      const result = await query('SELECT * FROM amenities WHERE id = $1', [id]);
+
+      if (result.rowCount === 0) {
+        throw new AppError('Amenity not found', 404);
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        data: result.rows[0]
+      });
+    }
+
+    // Add the id parameter to the values array
+    values.push(id);
+
+    // Construct and execute the query
+    const result = await query(
+      `UPDATE amenities SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    if (result.rowCount === 0) {
+      throw new AppError('Amenity not found', 404);
     }
 
     res.status(200).json({
       status: 'success',
-      data
+      data: result.rows[0]
     });
   } catch (error) {
-    next(error);
+    if (error instanceof z.ZodError) {
+      next(new AppError(error.message, 400));
+    } else if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error updating amenity', 500));
+    }
   }
 };
 
@@ -123,13 +182,13 @@ export const deleteAmenity = async (req: Request, res: Response, next: NextFunct
     const { id } = req.params;
 
     // Delete amenity from database
-    const { error } = await supabaseAdmin
-      .from('amenities')
-      .delete()
-      .eq('id', id);
+    const result = await query(
+      'DELETE FROM amenities WHERE id = $1 RETURNING id',
+      [id]
+    );
 
-    if (error) {
-      throw new AppError('Error deleting amenity', 500);
+    if (result.rowCount === 0) {
+      throw new AppError('Amenity not found', 404);
     }
 
     res.status(204).json({
@@ -137,6 +196,10 @@ export const deleteAmenity = async (req: Request, res: Response, next: NextFunct
       data: null
     });
   } catch (error) {
-    next(error);
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error deleting amenity', 500));
+    }
   }
 };

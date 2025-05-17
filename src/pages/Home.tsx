@@ -1,11 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BedDouble, Coffee, Wifi, Quote } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InfiniteScrollReviews from "@/components/InfiniteScrollReviews";
 
+interface PageContent {
+  welcomeTitle: string;
+  welcomeDescription: string;
+  heroTitle: string;
+  heroSubtitle: string;
+}
+
 const Home = () => {
+  const [content, setContent] = useState<PageContent>({
+    welcomeTitle: "Welcome to Macchiato Suites",
+    welcomeDescription: "Nestled in the vibrant heart of the city, Macchiato Suites offers a perfect blend of luxury, comfort, and exceptional service. Whether you're visiting for business or pleasure, our elegant accommodations and world-class amenities ensure an unforgettable stay.",
+    heroTitle: "<span class=\"text-[#E8C3A3]\">Luxurious</span> <span class=\"text-[#C45D3A]\">Comfort</span> in the Heart of the City",
+    heroSubtitle: "Experience unparalleled elegance and tranquility at Macchiato Suites, where every stay is crafted for perfection."
+  });
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -16,12 +31,12 @@ const Home = () => {
         <div className="absolute inset-0 bg-black/30"></div>
         <div className="container mx-auto px-4 py-24 relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 text-white">
-              <span className="text-[#E8C3A3]">Luxurious</span> <span className="text-[#C45D3A]">Comfort</span> in the Heart of the City
-            </h1>
+            <h1
+              className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 text-white"
+              dangerouslySetInnerHTML={{ __html: content.heroTitle }}
+            />
             <p className="text-xl text-white/90 mb-8">
-              Experience unparalleled elegance and tranquility at Macchiato Suites,
-              where every stay is crafted for perfection.
+              {content.heroSubtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="bg-[#C45D3A] hover:bg-[#A74B2F] text-white">
@@ -40,12 +55,10 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-[#8A5A44]">
-              Welcome to Macchiato Suites
+              {content.welcomeTitle}
             </h2>
             <p className="text-lg text-neutral-600">
-              Nestled in the vibrant heart of the city, Macchiato Suites offers a perfect blend of luxury, comfort,
-              and exceptional service. Whether you're visiting for business or pleasure, our elegant accommodations
-              and world-class amenities ensure an unforgettable stay.
+              {content.welcomeDescription}
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 items-center">

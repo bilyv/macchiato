@@ -9,6 +9,9 @@ import roomRoutes from './routes/room.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import amenityRoutes from './routes/amenity.routes.js';
 import contactRoutes from './routes/contact.routes.js';
+// Using public notification bar routes for testing
+import notificationBarPublicRoutes from './routes/notification-bar-public.routes.js';
+import './config/database.js'; // Initialize database connection
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +36,8 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/amenities', amenityRoutes);
 app.use('/api/contact', contactRoutes);
+// Use the public notification bar routes for testing
+app.use('/api/notification-bars', notificationBarPublicRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

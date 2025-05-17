@@ -20,6 +20,7 @@ import AdminRooms from "./pages/Admin/Rooms";
 import AdminBookings from "./pages/Admin/Bookings";
 import AdminAmenities from "./pages/Admin/Amenities";
 import AdminContact from "./pages/Admin/Contact";
+import AdminMyPages from "./pages/Admin/MyPages";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/admin/bookings" element={<AdminBookings />} />
             <Route path="/admin/amenities" element={<AdminAmenities />} />
             <Route path="/admin/contact" element={<AdminContact />} />
+            <Route path="/admin/my-pages" element={<AdminMyPages />} />
 
             {/* Redirect /admin to /admin/dashboard */}
             <Route path="/admin" element={<AdminDashboard />} />
