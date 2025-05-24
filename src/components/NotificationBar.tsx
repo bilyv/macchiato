@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 
 interface NotificationBarProps {
   className?: string;
+  scrolled?: boolean;
+  visible?: boolean;
 }
 
 interface NotificationBar {
@@ -16,7 +18,7 @@ interface NotificationBar {
   end_date: string | null;
 }
 
-const NotificationBar = ({ className }: NotificationBarProps) => {
+const NotificationBar = ({ className, scrolled = false, visible = true }: NotificationBarProps) => {
   const [notification, setNotification] = useState<NotificationBar | null>(null);
   const [dismissed, setDismissed] = useState<boolean>(false);
 
@@ -65,7 +67,7 @@ const NotificationBar = ({ className }: NotificationBarProps) => {
   };
 
   if (!notification || dismissed) {
-    return null;
+    return <div className="hidden"></div>;
   }
 
   const bgColorMap = {
@@ -76,21 +78,30 @@ const NotificationBar = ({ className }: NotificationBarProps) => {
   };
 
   return (
-    <div
-      className={cn(
-        'py-2 px-4 text-center relative',
-        bgColorMap[notification.type],
-        className
-      )}
-    >
-      <p className="text-sm font-medium">{notification.message}</p>
-      <button
-        onClick={handleDismiss}
-        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-black/10"
-        aria-label="Dismiss notification"
+    <div className={cn(
+      "navbar-transition navbar-scroll-transition",
+      scrolled
+        ? "container mx-auto px-6 pt-2"
+        : "w-full px-0 pt-0",
+      visible ? "navbar-visible" : "navbar-hidden"
+    )}>
+      <div
+        className={cn(
+          'py-2 px-4 text-center relative navbar-transition',
+          scrolled ? 'rounded-lg mx-0' : 'rounded-none mx-0',
+          bgColorMap[notification.type],
+          className
+        )}
       >
-        <X className="h-4 w-4" />
-      </button>
+        <p className="text-sm font-medium">{notification.message}</p>
+        <button
+          onClick={handleDismiss}
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-black/10"
+          aria-label="Dismiss notification"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 };

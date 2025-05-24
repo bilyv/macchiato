@@ -121,3 +121,165 @@ h1, h2, h3, h4, h5, h6 {
 .animate-scroll-fast-reverse:hover {
   animation-play-state: paused;
 }
+
+/* Floating animation for chat button */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Scale animation for chat dialog */
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+}
+
+@keyframes welcomeScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.03) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes welcomeScaleOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-scale-out {
+  animation: scaleOut 0.2s cubic-bezier(0.55, 0.085, 0.68, 0.53);
+}
+
+.animate-welcome-in {
+  animation: welcomeScaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-welcome-out {
+  animation: welcomeScaleOut 0.25s ease-in;
+}
+
+/* Click animation for chat button */
+@keyframes clickPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-click {
+  animation: clickPulse 0.3s ease-in-out;
+}
+
+/* Optimized navbar transitions */
+.navbar-transition {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Navbar show/hide animations */
+.navbar-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.navbar-visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Transition for navbar show/hide */
+.navbar-scroll-transition {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  will-change: transform, opacity;
+}
+
+/* Custom dropdown menu styling */
+.mobile-dropdown-menu {
+  animation: dropdownFadeIn 0.2s ease-out;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E8C3A3;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mobile-dropdown-item {
+  transition: all 0.15s ease;
+}
+
+.mobile-dropdown-item:hover {
+  background-color: #F9F5F2;
+  transform: translateX(2px);
+}
+
+/* Book Now button in dropdown */
+.mobile-dropdown-item button {
+  transition: all 0.2s ease;
+}

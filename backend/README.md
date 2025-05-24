@@ -151,13 +151,6 @@ CREATE TABLE contact_messages (
 - `POST /api/auth/register` - Register a new user
 - `GET /api/auth/profile` - Get current user profile
 
-### Rooms
-- `GET /api/rooms` - Get all rooms
-- `GET /api/rooms/:id` - Get room by ID
-- `POST /api/rooms` - Create a new room (admin only)
-- `PUT /api/rooms/:id` - Update a room (admin only)
-- `DELETE /api/rooms/:id` - Delete a room (admin only)
-
 ### Bookings
 - `GET /api/bookings` - Get all bookings (admin) or user's bookings
 - `GET /api/bookings/:id` - Get booking by ID

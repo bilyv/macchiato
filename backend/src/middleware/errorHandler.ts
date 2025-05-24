@@ -24,7 +24,7 @@ export const errorHandler = (
   // Default error status and message
   let statusCode = 500;
   let message = 'Internal Server Error';
-  let stack = process.env.NODE_ENV === 'development' ? err.stack : undefined;
+  const stack = process.env.NODE_ENV === 'development' ? err.stack : undefined;
 
   // If it's our custom AppError, use its status code and message
   if ('statusCode' in err) {

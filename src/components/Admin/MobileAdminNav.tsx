@@ -3,7 +3,8 @@ import {
   LayoutDashboard,
   CalendarClock,
   MessageSquare,
-  FileEdit
+  FileEdit,
+  BedDouble
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -30,6 +31,11 @@ const MobileAdminNav = () => {
       title: 'Bookings',
       path: '/admin/bookings',
       icon: <CalendarClock className="h-5 w-5" />,
+    },
+    {
+      title: 'Rooms',
+      path: '/admin/rooms',
+      icon: <BedDouble className="h-5 w-5" />,
     },
     {
       title: 'Messages',

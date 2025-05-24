@@ -1,26 +1,45 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { query, transaction } from '../config/database.js';
+import { query } from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
+import cloudinary, { getPublicIdFromUrl } from '../config/cloudinary.js';
+
+// Define Request type with file property for multer
+interface MulterRequest extends Request {
+  file?: {
+    path: string;
+    filename: string;
+    [key: string]: any;
+  };
+}
 
 // Validation schemas
 const roomSchema = z.object({
   name: z.string().min(1, 'Room name is required'),
   description: z.string().min(1, 'Description is required'),
-  price_per_night: z.number().positive('Price must be positive'),
-  capacity: z.number().int().positive('Capacity must be a positive integer'),
-  size_sqm: z.number().positive('Size must be positive'),
+  price_per_night: z.union([
+    z.number().positive('Price must be positive'),
+    z.string().transform(val => parseFloat(val) || 0)
+  ]).refine(val => val > 0, 'Price must be positive'),
+  capacity: z.union([
+    z.number().int().positive('Capacity must be a positive integer'),
+    z.string().transform(val => parseInt(val) || 0)
+  ]).refine(val => val > 0, 'Capacity must be a positive integer'),
+  size_sqm: z.union([
+    z.number().positive('Size must be positive'),
+    z.string().transform(val => parseFloat(val) || 0)
+  ]).refine(val => val > 0, 'Size must be positive'),
   bed_type: z.string().min(1, 'Bed type is required'),
-  image_url: z.string().url('Image URL must be valid').optional(),
   amenities: z.array(z.string()).optional(),
+  category: z.string().optional(),
   is_available: z.boolean().default(true)
 });
 
 // Get all rooms
-export const getAllRooms = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllRooms = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await query(
-      'SELECT * FROM rooms ORDER BY price_per_night ASC'
+      'SELECT * FROM rooms ORDER BY created_at DESC'
     );
 
     res.status(200).json({
@@ -61,17 +80,43 @@ export const getRoomById = async (req: Request, res: Response, next: NextFunctio
 };
 
 // Create new room (admin only)
-export const createRoom = async (req: Request, res: Response, next: NextFunction) => {
+export const createRoom = async (req: MulterRequest, res: Response, next: NextFunction) => {
   try {
-    // Validate request body
-    const roomData = roomSchema.parse(req.body);
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+
+    // Parse and validate the request body
+    let roomData;
+    try {
+      const parsedData = JSON.parse(req.body.data || '{}');
+      console.log('Parsed data for create:', parsedData);
+      roomData = roomSchema.parse(parsedData);
+    } catch (parseError) {
+      console.error('Error parsing room data:', parseError);
+      if (parseError instanceof SyntaxError) {
+        throw new AppError('Invalid JSON format in room data', 400);
+      } else if (parseError instanceof z.ZodError) {
+        const errorDetails = parseError.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+        throw new AppError(`Validation error: ${errorDetails}`, 400);
+      } else {
+        throw new AppError('Invalid room data format', 400);
+      }
+    }
+
+    // Handle image upload
+    let imageUrl = null;
+    if (req.file) {
+      // Image was uploaded, store the path
+      imageUrl = req.file.path;
+      console.log('Image uploaded to:', imageUrl);
+    }
 
     // Insert room into database
     const result = await query(
       `INSERT INTO rooms (
         name, description, price_per_night, capacity, size_sqm,
-        bed_type, image_url, amenities, is_available
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        bed_type, image_url, amenities, category, is_available
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *`,
       [
         roomData.name,
@@ -80,8 +125,9 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
         roomData.capacity,
         roomData.size_sqm,
         roomData.bed_type,
-        roomData.image_url || null,
+        imageUrl,
         roomData.amenities || [],
+        roomData.category || null,
         roomData.is_available
       ]
     );
@@ -91,6 +137,18 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
       data: result.rows[0]
     });
   } catch (error) {
+    // If there was an uploaded file but the database operation failed, delete the uploaded image
+    if (req.file && req.file.path) {
+      try {
+        const publicId = getPublicIdFromUrl(req.file.path);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+        }
+      } catch (cloudinaryError) {
+        console.error('Error deleting image from Cloudinary:', cloudinaryError);
+      }
+    }
+
     if (error instanceof z.ZodError) {
       next(new AppError(error.message, 400));
     } else {
@@ -100,91 +158,106 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
 };
 
 // Update room (admin only)
-export const updateRoom = async (req: Request, res: Response, next: NextFunction) => {
+export const updateRoom = async (req: MulterRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
-    // Validate request body
-    const roomData = roomSchema.partial().parse(req.body);
+    console.log('Update request body:', req.body);
+    console.log('Update request file:', req.file);
 
-    // Build the SET part of the query dynamically based on provided fields
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    // Add each field that exists in roomData to the updates array
-    if (roomData.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(roomData.name);
-    }
-    if (roomData.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(roomData.description);
-    }
-    if (roomData.price_per_night !== undefined) {
-      updates.push(`price_per_night = $${paramIndex++}`);
-      values.push(roomData.price_per_night);
-    }
-    if (roomData.capacity !== undefined) {
-      updates.push(`capacity = $${paramIndex++}`);
-      values.push(roomData.capacity);
-    }
-    if (roomData.size_sqm !== undefined) {
-      updates.push(`size_sqm = $${paramIndex++}`);
-      values.push(roomData.size_sqm);
-    }
-    if (roomData.bed_type !== undefined) {
-      updates.push(`bed_type = $${paramIndex++}`);
-      values.push(roomData.bed_type);
-    }
-    if (roomData.image_url !== undefined) {
-      updates.push(`image_url = $${paramIndex++}`);
-      values.push(roomData.image_url);
-    }
-    if (roomData.amenities !== undefined) {
-      updates.push(`amenities = $${paramIndex++}`);
-      values.push(roomData.amenities);
-    }
-    if (roomData.is_available !== undefined) {
-      updates.push(`is_available = $${paramIndex++}`);
-      values.push(roomData.is_available);
-    }
-
-    // Add updated_at to always update the timestamp
-    updates.push(`updated_at = NOW()`);
-
-    // If no fields to update, return the current room
-    if (updates.length === 1) { // Only updated_at
-      const result = await query('SELECT * FROM rooms WHERE id = $1', [id]);
-
-      if (result.rowCount === 0) {
-        throw new AppError('Room not found', 404);
+    // Parse and validate the request body
+    let roomData;
+    try {
+      const parsedData = JSON.parse(req.body.data || '{}');
+      console.log('Parsed data for update:', parsedData);
+      roomData = roomSchema.parse(parsedData);
+    } catch (parseError) {
+      console.error('Error parsing room data for update:', parseError);
+      if (parseError instanceof SyntaxError) {
+        throw new AppError('Invalid JSON format in room data', 400);
+      } else if (parseError instanceof z.ZodError) {
+        const errorDetails = parseError.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+        throw new AppError(`Validation error: ${errorDetails}`, 400);
+      } else {
+        throw new AppError('Invalid room data format', 400);
       }
-
-      return res.status(200).json({
-        status: 'success',
-        data: result.rows[0]
-      });
     }
 
-    // Add the id parameter to the values array
-    values.push(id);
-
-    // Construct and execute the query
-    const result = await query(
-      `UPDATE rooms SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      values
-    );
-
-    if (result.rowCount === 0) {
+    // Check if room exists
+    const checkResult = await query('SELECT * FROM rooms WHERE id = $1', [id]);
+    if (checkResult.rowCount === 0) {
       throw new AppError('Room not found', 404);
     }
+
+    const existingRoom = checkResult.rows[0];
+
+    // Handle image upload
+    let imageUrl = existingRoom.image_url;
+    if (req.file) {
+      // New image was uploaded, update the path
+      imageUrl = req.file.path;
+
+      // Delete old image if it exists
+      if (existingRoom.image_url) {
+        try {
+          const publicId = getPublicIdFromUrl(existingRoom.image_url);
+          if (publicId) {
+            await cloudinary.uploader.destroy(publicId);
+          }
+        } catch (cloudinaryError) {
+          console.error('Error deleting old image from Cloudinary:', cloudinaryError);
+        }
+      }
+    }
+
+    // Update room in database
+    const result = await query(
+      `UPDATE rooms SET
+        name = $1,
+        description = $2,
+        price_per_night = $3,
+        capacity = $4,
+        size_sqm = $5,
+        bed_type = $6,
+        image_url = $7,
+        amenities = $8,
+        category = $9,
+        is_available = $10,
+        updated_at = NOW()
+      WHERE id = $11
+      RETURNING *`,
+      [
+        roomData.name,
+        roomData.description,
+        roomData.price_per_night,
+        roomData.capacity,
+        roomData.size_sqm,
+        roomData.bed_type,
+        imageUrl,
+        roomData.amenities || [],
+        roomData.category || null,
+        roomData.is_available,
+        id
+      ]
+    );
 
     res.status(200).json({
       status: 'success',
       data: result.rows[0]
     });
   } catch (error) {
+    // If there was an uploaded file but the database operation failed, delete the uploaded image
+    if (req.file && req.file.path) {
+      try {
+        const publicId = getPublicIdFromUrl(req.file.path);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+        }
+      } catch (cloudinaryError) {
+        console.error('Error deleting image from Cloudinary:', cloudinaryError);
+      }
+    }
+
     if (error instanceof z.ZodError) {
       next(new AppError(error.message, 400));
     } else if (error instanceof AppError) {
@@ -200,14 +273,30 @@ export const deleteRoom = async (req: Request, res: Response, next: NextFunction
   try {
     const { id } = req.params;
 
+    // Check if room exists and get image URL
+    const checkResult = await query('SELECT image_url FROM rooms WHERE id = $1', [id]);
+    if (checkResult.rowCount === 0) {
+      throw new AppError('Room not found', 404);
+    }
+
+    const imageUrl = checkResult.rows[0].image_url;
+
     // Delete room from database
-    const result = await query(
+    await query(
       'DELETE FROM rooms WHERE id = $1 RETURNING id',
       [id]
     );
 
-    if (result.rowCount === 0) {
-      throw new AppError('Room not found', 404);
+    // Delete image from Cloudinary if it exists
+    if (imageUrl) {
+      try {
+        const publicId = getPublicIdFromUrl(imageUrl);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+        }
+      } catch (cloudinaryError) {
+        console.error('Error deleting image from Cloudinary:', cloudinaryError);
+      }
     }
 
     res.status(204).json({

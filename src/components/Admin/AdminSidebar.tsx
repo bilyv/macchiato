@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  CalendarClock,
   MessageSquare,
   LogOut,
-  FileEdit
+  FileEdit,
+  BedDouble
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,9 +25,9 @@ const AdminSidebar = () => {
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      title: 'Bookings',
-      path: '/admin/bookings',
-      icon: <CalendarClock className="h-5 w-5" />,
+      title: 'Rooms',
+      path: '/admin/rooms',
+      icon: <BedDouble className="h-5 w-5" />,
     },
     {
       title: 'Contact Messages',

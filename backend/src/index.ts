@@ -5,10 +5,9 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.routes.js';
-import roomRoutes from './routes/room.routes.js';
-import bookingRoutes from './routes/booking.routes.js';
-import amenityRoutes from './routes/amenity.routes.js';
 import contactRoutes from './routes/contact.routes.js';
+import roomRoutes from './routes/room.routes.js';
+import galleryRoutes from './routes/gallery.routes.js';
 // Using public notification bar routes for testing
 import notificationBarPublicRoutes from './routes/notification-bar-public.routes.js';
 import './config/database.js'; // Initialize database connection
@@ -32,10 +31,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/amenities', amenityRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/gallery', galleryRoutes);
 // Use the public notification bar routes for testing
 app.use('/api/notification-bars', notificationBarPublicRoutes);
 

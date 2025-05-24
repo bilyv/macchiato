@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BedDouble, Coffee, Wifi, Quote } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InfiniteScrollReviews from "@/components/InfiniteScrollReviews";
+import { BookingFormDialog } from "@/components/BookingFormDialog";
+import { api } from "@/lib/api";
+import { Room } from "@/lib/api/rooms";
 
 interface PageContent {
   welcomeTitle: string;
@@ -20,6 +23,31 @@ const Home = () => {
     heroTitle: "<span class=\"text-[#E8C3A3]\">Luxurious</span> <span class=\"text-[#C45D3A]\">Comfort</span> in the Heart of the City",
     heroSubtitle: "Experience unparalleled elegance and tranquility at Macchiato Suites, where every stay is crafted for perfection."
   });
+
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [featuredRooms, setFeaturedRooms] = useState<Room[]>([]);
+  const [elegantSuites, setElegantSuites] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.rooms.getAll();
+        setRooms(response.data);
+
+        // Filter rooms by category
+        setFeaturedRooms(response.data.filter(room => room.category === 'Featured Rooms'));
+        setElegantSuites(response.data.filter(room => room.category === 'Our Elegant Suites'));
+      } catch (error) {
+        console.error('Error fetching rooms:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRooms();
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -39,9 +67,11 @@ const Home = () => {
               {content.heroSubtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-[#C45D3A] hover:bg-[#A74B2F] text-white">
-                Book Your Stay <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <BookingFormDialog
+                buttonText="Book Your Stay"
+                buttonSize="lg"
+                showArrow={true}
+              />
               <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/20">
                 <Link to="/rooms">Explore Rooms</Link>
               </Button>
@@ -152,88 +182,121 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Room Showcase */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-3 text-[#8A5A44]">
-            Our Elegant Suites
-          </h2>
-          <p className="text-lg text-neutral-600 mb-10">
-            Discover our collection of thoughtfully designed accommodations
-          </p>
+      {/* Elegant Suites Showcase */}
+      {elegantSuites.length > 0 && (
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-3 text-[#8A5A44]">
+              Our Elegant Suites
+            </h2>
+            <p className="text-lg text-neutral-600 mb-10">
+              Discover our collection of thoughtfully designed accommodations
+            </p>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Room Card 1 */}
-            <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
-              <div className="h-64 overflow-hidden relative">
-                <img
-                  src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"
-                  alt="Deluxe Suite"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Deluxe Suite</h3>
-                <p className="text-neutral-600 mb-4">Spacious room with king-size bed and city view</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-[#C45D3A]">$299 <span className="text-sm font-normal text-neutral-500">/night</span></span>
-                  <Button variant="outline" size="sm" className="text-[#C45D3A] border-[#C45D3A]">
-                    <Link to="/rooms">View Details</Link>
-                  </Button>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {elegantSuites.slice(0, 3).map((room) => (
+                <div key={room.id} className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
+                  <div className="h-64 overflow-hidden relative">
+                    <img
+                      src={room.image_url || "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"}
+                      alt={room.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">{room.name}</h3>
+                    <p className="text-neutral-600 mb-4">{room.description.length > 100 ? `${room.description.substring(0, 100)}...` : room.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[#C45D3A]">${room.price_per_night} <span className="text-sm font-normal text-neutral-500">/night</span></span>
+                      <Button variant="outline" size="sm" className="text-[#C45D3A] border-[#C45D3A]">
+                        <Link to="/rooms">View Details</Link>
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
+
+              {/* Show placeholder cards if we have less than 3 rooms */}
+              {elegantSuites.length < 3 && isLoading && (
+                Array(3 - elegantSuites.length).fill(0).map((_, index) => (
+                  <div key={`placeholder-${index}`} className="rounded-lg overflow-hidden shadow-sm border border-neutral-200 animate-pulse">
+                    <div className="h-64 bg-gray-200"></div>
+                    <div className="p-6">
+                      <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-6 w-20 bg-gray-200 rounded"></div>
+                        <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
-            {/* Room Card 2 */}
-            <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
-              <div className="h-64 overflow-hidden relative">
-                <img
-                  src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070"
-                  alt="Executive Suite"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Executive Suite</h3>
-                <p className="text-neutral-600 mb-4">Luxury suite with separate living area and balcony</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-[#C45D3A]">$499 <span className="text-sm font-normal text-neutral-500">/night</span></span>
-                  <Button variant="outline" size="sm" className="text-[#C45D3A] border-[#C45D3A]">
-                    <Link to="/rooms">View Details</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Room Card 3 */}
-            <div className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
-              <div className="h-64 overflow-hidden relative">
-                <img
-                  src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2070"
-                  alt="Penthouse Suite"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">Penthouse Suite</h3>
-                <p className="text-neutral-600 mb-4">Ultimate luxury with panoramic views and private terrace</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-[#C45D3A]">$799 <span className="text-sm font-normal text-neutral-500">/night</span></span>
-                  <Button variant="outline" size="sm" className="text-[#C45D3A] border-[#C45D3A]">
-                    <Link to="/rooms">View Details</Link>
-                  </Button>
-                </div>
-              </div>
+            <div className="mt-12 text-center">
+              <Button className="bg-[#8A5A44] hover:bg-[#6B4636] text-white">
+                <Link to="/rooms">View All Rooms</Link> <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
           </div>
+        </section>
+      )}
 
-          <div className="mt-12 text-center">
-            <Button className="bg-[#8A5A44] hover:bg-[#6B4636] text-white">
-              <Link to="/rooms">View All Rooms</Link> <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+      {/* Featured Rooms Showcase */}
+      {featuredRooms.length > 0 && (
+        <section className="py-16 bg-[#F9F5F2]">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-3 text-[#8A5A44]">
+              Featured Rooms
+            </h2>
+            <p className="text-lg text-neutral-600 mb-10">
+              Our most popular accommodations with premium amenities
+            </p>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredRooms.slice(0, 3).map((room) => (
+                <div key={room.id} className="group rounded-lg overflow-hidden shadow-sm bg-white border border-neutral-200 hover:shadow-md transition-all">
+                  <div className="h-64 overflow-hidden relative">
+                    <img
+                      src={room.image_url || "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"}
+                      alt={room.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">{room.name}</h3>
+                    <p className="text-neutral-600 mb-4">{room.description.length > 100 ? `${room.description.substring(0, 100)}...` : room.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[#C45D3A]">${room.price_per_night} <span className="text-sm font-normal text-neutral-500">/night</span></span>
+                      <Button variant="outline" size="sm" className="text-[#C45D3A] border-[#C45D3A]">
+                        <Link to="/rooms">View Details</Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Show placeholder cards if we have less than 3 rooms */}
+              {featuredRooms.length < 3 && isLoading && (
+                Array(3 - featuredRooms.length).fill(0).map((_, index) => (
+                  <div key={`placeholder-${index}`} className="rounded-lg overflow-hidden shadow-sm border border-neutral-200 animate-pulse">
+                    <div className="h-64 bg-gray-200"></div>
+                    <div className="p-6">
+                      <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-6 w-20 bg-gray-200 rounded"></div>
+                        <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Reviews Section */}
       <section className="py-16 bg-[#F9F5F2]">
@@ -265,9 +328,12 @@ const Home = () => {
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Book your stay today and enjoy exclusive amenities and personalized service
           </p>
-          <Button size="lg" className="bg-white text-[#C45D3A] hover:bg-neutral-100">
-            Book Now and Save 15% <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <BookingFormDialog
+            buttonText="Book Now and Save 15%"
+            buttonSize="lg"
+            buttonClassName="bg-white text-[#C45D3A] hover:bg-neutral-100"
+            showArrow={true}
+          />
         </div>
       </section>
 

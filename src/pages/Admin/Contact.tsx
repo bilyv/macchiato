@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/Admin/AdminLayout';
 import { api } from '@/lib/api';
+import { ContactMessage } from '@/lib/api/contact';
 import {
   Table,
   TableBody,
@@ -31,20 +32,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-interface ContactMessage {
-  id: number;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-}
-
 const AdminContact = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
 
   useEffect(() => {
@@ -55,10 +46,16 @@ const AdminContact = () => {
     setIsLoading(true);
     try {
       const response = await api.contact.getAll();
-      setMessages(response.data);
+      if (response && response.data) {
+        setMessages(response.data);
+      } else {
+        console.error('Invalid response format:', response);
+        toast.error('Failed to load contact messages: Invalid response format');
+      }
     } catch (error) {
       console.error('Error fetching contact messages:', error);
-      toast.error('Failed to load contact messages');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load contact messages';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -66,20 +63,22 @@ const AdminContact = () => {
 
   const handleDeleteMessage = async () => {
     if (!messageToDelete) return;
-    
+
     try {
       await api.contact.delete(messageToDelete);
       setMessages(messages.filter(message => message.id !== messageToDelete));
       toast.success('Message deleted successfully');
     } catch (error) {
       console.error('Error deleting message:', error);
-      toast.error('Failed to delete message');
+      // Provide more specific error message if available
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete message';
+      toast.error(errorMessage);
     } finally {
       setMessageToDelete(null);
     }
   };
 
-  const handleMarkAsRead = async (id: number) => {
+  const handleMarkAsRead = async (id: string) => {
     try {
       await api.contact.markAsRead(id);
       setMessages(

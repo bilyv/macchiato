@@ -4,6 +4,7 @@ import { ArrowRight, Camera, MapPin, Utensils, Calendar } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HorizontalScrollGallery from "@/components/HorizontalScrollGallery";
+import { BookingFormDialog } from "@/components/BookingFormDialog";
 
 const Gallery = () => {
   // State for active category
@@ -306,9 +307,12 @@ const Gallery = () => {
             Stay at Macchiato Suites and enjoy easy access to the city's best attractions, neighborhoods, restaurants, and events.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-[#C45D3A] hover:bg-neutral-100">
-              Book Your Stay <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <BookingFormDialog
+              buttonText="Book Your Stay"
+              buttonSize="lg"
+              buttonClassName="bg-white text-[#C45D3A] hover:bg-neutral-100"
+              showArrow={true}
+            />
             <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
               Contact Our Concierge
             </Button>
