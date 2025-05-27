@@ -1,15 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/Admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, Save, Plus, Trash2, Bell, X, Check, Camera, Image, Upload } from 'lucide-react';
+import { Pencil, Plus, Trash2, Bell, Home, Image, Utensils } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from '@/components/ui/sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GalleryImage } from '@/lib/api/gallery';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +38,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import MyPagesGallery from './MyPagesGallery';
+import MyPagesMenu from './MyPagesMenu';
 
 interface NotificationBar {
   id: string;
@@ -51,22 +52,9 @@ interface NotificationBar {
   updated_at: string;
 }
 
-interface PageContent {
-  id: string;
-  page_name: string;
-  section_name: string;
-  content: any;
-  created_at: string;
-  updated_at: string;
-}
-
 const AdminMyPages = () => {
   const [activeTab, setActiveTab] = useState('home');
-  const [activeContentTab, setActiveContentTab] = useState('notification');
   const [notificationBars, setNotificationBars] = useState<NotificationBar[]>([]);
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingGallery, setIsLoadingGallery] = useState(true);
   const [editingNotification, setEditingNotification] = useState<NotificationBar | null>(null);
   const [newNotification, setNewNotification] = useState({
     message: '',
@@ -76,17 +64,7 @@ const AdminMyPages = () => {
     end_date: '',
   });
 
-  // Gallery image upload state
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [newGalleryImage, setNewGalleryImage] = useState({
-    title: '',
-    description: '',
-    category: 'attractions' as 'attractions' | 'neighbourhood' | 'foods' | 'events'
-  });
-
-  // Fetch notification bars and gallery images
+  // Fetch notification bars
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -95,95 +73,16 @@ const AdminMyPages = () => {
         if (notificationsResponse.data) {
           setNotificationBars(notificationsResponse.data);
         }
-        setIsLoading(false);
-
-        // Fetch gallery images
-        const galleryResponse = await api.gallery.getAll();
-        if (galleryResponse.data) {
-          setGalleryImages(galleryResponse.data);
-        }
-        setIsLoadingGallery(false);
       } catch (error) {
         console.error('Error fetching data:', error);
-        toast.error('Failed to load data');
-        setIsLoading(false);
-        setIsLoadingGallery(false);
+        toast.error('Failed to load notification data');
       }
     };
 
     fetchData();
   }, []);
 
-  // Handle image selection
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
 
-      // Create a preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handle gallery image upload
-  const handleCreateGalleryImage = async () => {
-    try {
-      if (!selectedImage) {
-        toast.error('Please select an image to upload');
-        return;
-      }
-
-      if (!newGalleryImage.title.trim()) {
-        toast.error('Please enter a title for the image');
-        return;
-      }
-
-      // Upload the image
-      await api.gallery.create(newGalleryImage, selectedImage);
-
-      // Show success message
-      toast.success('Gallery image uploaded successfully');
-
-      // Reset form
-      setNewGalleryImage({
-        title: '',
-        description: '',
-        category: 'attractions'
-      });
-      setSelectedImage(null);
-      setImagePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
-      // Refresh gallery images
-      const response = await api.gallery.getAll();
-      if (response.data) {
-        setGalleryImages(response.data);
-      }
-    } catch (error) {
-      console.error('Error uploading gallery image:', error);
-      toast.error('Failed to upload gallery image');
-    }
-  };
-
-  // Handle gallery image deletion
-  const handleDeleteGalleryImage = async (id: string) => {
-    try {
-      await api.gallery.delete(id);
-      toast.success('Gallery image deleted successfully');
-
-      // Refresh gallery images
-      setGalleryImages(galleryImages.filter(image => image.id !== id));
-    } catch (error) {
-      console.error('Error deleting gallery image:', error);
-      toast.error('Failed to delete gallery image');
-    }
-  };
 
   const handleCreateNotification = async () => {
     try {
@@ -296,9 +195,19 @@ const AdminMyPages = () => {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="home">Home</TabsTrigger>
-                <TabsTrigger value="gallery">Gallery</TabsTrigger>
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="home" className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </TabsTrigger>
+                <TabsTrigger value="gallery" className="flex items-center gap-2">
+                  <Image className="h-4 w-4" />
+                  <span className="hidden sm:inline">Gallery</span>
+                </TabsTrigger>
+                <TabsTrigger value="menu" className="flex items-center gap-2">
+                  <Utensils className="h-4 w-4" />
+                  <span className="hidden sm:inline">Menu</span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="home" className="mt-6">
@@ -583,162 +492,11 @@ const AdminMyPages = () => {
 
 
               <TabsContent value="gallery" className="mt-6 space-y-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Gallery Images</CardTitle>
-                      <CardDescription>
-                        Manage images for your gallery page
-                      </CardDescription>
-                    </div>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button size="sm" className="text-xs h-7 px-2 py-1">
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add Image
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                          <DialogTitle>Add Gallery Image</DialogTitle>
-                          <DialogDescription>
-                            Upload a new image to your gallery
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="image-upload">Image</Label>
-                            <div className="flex flex-col gap-4">
-                              <Input
-                                id="image-upload"
-                                type="file"
-                                accept="image/*"
-                                ref={fileInputRef}
-                                onChange={handleImageChange}
-                              />
-                              {imagePreview && (
-                                <div className="relative w-full h-40 rounded-md overflow-hidden border">
-                                  <img
-                                    src={imagePreview}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="image-title">Title</Label>
-                            <Input
-                              id="image-title"
-                              value={newGalleryImage.title}
-                              onChange={(e) => setNewGalleryImage({...newGalleryImage, title: e.target.value})}
-                              placeholder="Enter image title"
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="image-description">Description (Optional)</Label>
-                            <Textarea
-                              id="image-description"
-                              value={newGalleryImage.description}
-                              onChange={(e) => setNewGalleryImage({...newGalleryImage, description: e.target.value})}
-                              placeholder="Enter image description"
-                              rows={3}
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="image-category">Category</Label>
-                            <Select
-                              value={newGalleryImage.category}
-                              onValueChange={(value: any) => setNewGalleryImage({...newGalleryImage, category: value})}
-                            >
-                              <SelectTrigger id="image-category">
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="attractions">Attractions</SelectItem>
-                                <SelectItem value="neighbourhood">Neighbourhood</SelectItem>
-                                <SelectItem value="foods">Foods</SelectItem>
-                                <SelectItem value="events">Events</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                <MyPagesGallery />
+              </TabsContent>
 
-                        </div>
-                        <DialogFooter>
-                          <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                          </DialogClose>
-                          <Button onClick={handleCreateGalleryImage}>
-                            Upload
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoadingGallery ? (
-                      <div className="flex justify-center items-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#8A5A44]"></div>
-                      </div>
-                    ) : galleryImages.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <Image className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                        <p>No gallery images uploaded yet</p>
-                        <p className="text-sm">Upload images to display in your gallery</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {galleryImages.map((image) => (
-                          <div key={image.id} className="relative group rounded-md overflow-hidden border">
-                            <div className="aspect-square">
-                              <img
-                                src={image.image_url}
-                                alt={image.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                              <div>
-                                <h4 className="text-white font-medium">{image.title}</h4>
-                                <p className="text-white/80 text-sm line-clamp-2">{image.description}</p>
-                                <span className="inline-block px-2 py-1 bg-white/20 text-white text-xs rounded mt-2">
-                                  {image.category}
-                                </span>
-                              </div>
-                              <div className="flex justify-end">
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        This will permanently delete this image from your gallery.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDeleteGalleryImage(image.id)}
-                                        className="bg-red-500 hover:bg-red-600"
-                                      >
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+              <TabsContent value="menu" className="mt-6 space-y-4">
+                <MyPagesMenu />
               </TabsContent>
             </Tabs>
           </CardContent>

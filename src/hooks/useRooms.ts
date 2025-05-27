@@ -3,15 +3,14 @@ import { api } from '@/lib/api';
 
 export interface Room {
   id: string;
-  name: string;
+  room_number: number;
   description: string;
   price_per_night: number;
   capacity: number;
-  size_sqm: number;
-  bed_type: string;
+  room_type: string;
   image_url: string;
   amenities: string[];
-  category: string;
+  display_category: string;
   is_available: boolean;
   created_at: string;
   updated_at: string;

@@ -319,6 +319,109 @@ const Home = () => {
         </div>
       </section>
 
+      {/* CEO Message Section */}
+      <section className="py-12 bg-gradient-to-br from-[#F9F5F2] to-[#EEDFD0]">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-8 animate-fade-in">
+              <h2 className="text-2xl md:text-3xl font-serif font-bold mb-3 text-[#8A5A44]">
+                A Message from Our CEO
+              </h2>
+              <div className="w-16 h-0.5 bg-[#C45D3A] mx-auto"></div>
+            </div>
+
+            {/* Enhanced Board Design */}
+            <div className="relative group">
+              {/* Outer frame with shadow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8A5A44] to-[#6B4636] rounded-2xl transform rotate-1 group-hover:rotate-0 transition-transform duration-500"></div>
+
+              {/* Inner board */}
+              <div className="relative bg-gradient-to-br from-white to-[#FEFCFA] rounded-2xl p-1 shadow-2xl">
+                {/* Decorative corners */}
+                <div className="absolute top-3 left-3 w-4 h-4 border-l-2 border-t-2 border-[#C45D3A] rounded-tl-lg"></div>
+                <div className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 border-[#C45D3A] rounded-tr-lg"></div>
+                <div className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 border-[#C45D3A] rounded-bl-lg"></div>
+                <div className="absolute bottom-3 right-3 w-4 h-4 border-r-2 border-b-2 border-[#C45D3A] rounded-br-lg"></div>
+
+                {/* Content area */}
+                <div className="bg-white rounded-xl p-6 md:p-8 m-2 shadow-inner border border-[#E8C3A3]/30 relative overflow-hidden">
+                  {/* Subtle pattern overlay */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className="absolute inset-0" style={{
+                      backgroundImage: `radial-gradient(circle at 1px 1px, #8A5A44 1px, transparent 0)`,
+                      backgroundSize: '20px 20px'
+                    }}></div>
+                  </div>
+
+                  {/* Elegant quote marks */}
+                  <div className="absolute top-4 left-4 text-4xl text-[#E8C3A3] font-serif leading-none opacity-60 transform -rotate-12">
+                    "
+                  </div>
+                  <div className="absolute bottom-4 right-4 text-4xl text-[#E8C3A3] font-serif leading-none opacity-60 transform rotate-12">
+                    "
+                  </div>
+
+                  <div className="relative z-10 pt-6">
+                    {/* Message content with staggered animation */}
+                    <div className="space-y-4 text-neutral-700 leading-relaxed">
+                      <p className="font-medium text-[#8A5A44] animate-fade-in" style={{animationDelay: '0.2s'}}>
+                        Dear Guests,
+                      </p>
+
+                      <p className="animate-fade-in" style={{animationDelay: '0.4s'}}>
+                        I am <span className="font-bold text-[#8A5A44] bg-[#EEDFD0]/30 px-1 rounded">Andrew Kayitani</span>, a passionate Rwandan hotelier and founder of Macchiato Suites Kigali. With a Master's Degree from <span className="font-semibold text-[#C45D3A]">Les Roches International School</span> in Switzerland and experience at <span className="font-semibold">Intercontinental Hotels</span> and <span className="font-semibold">Serena Hotels</span>, I bring world-class hospitality to Rwanda.
+                      </p>
+
+                      <p className="animate-fade-in" style={{animationDelay: '0.6s'}}>
+                        Macchiato Suites is where every detail creates a magical experience—your home away from home. We take pride in exceptional attention to detail and ensuring every guest enjoys their stay.
+                      </p>
+
+                      <p className="font-medium text-[#8A5A44] animate-fade-in" style={{animationDelay: '0.8s'}}>
+                        Welcome to Macchiato Suites Kigali, where your comfort is our priority.
+                      </p>
+                    </div>
+
+                    {/* CEO signature area with enhanced design */}
+                    <div className="flex flex-col md:flex-row items-center justify-between mt-6 pt-4 border-t border-[#E8C3A3]/50 animate-fade-in" style={{animationDelay: '1s'}}>
+                      <div className="text-center md:text-left mb-4 md:mb-0">
+                        {/* Signature line */}
+                        <div className="mb-2">
+                          <div className="w-32 h-8 bg-gradient-to-r from-[#8A5A44] to-[#C45D3A] rounded-full opacity-20 mx-auto md:mx-0 flex items-center justify-center">
+                            <span className="text-xs font-serif italic text-[#8A5A44] opacity-80">Signature</span>
+                          </div>
+                        </div>
+
+                        <div className="text-lg font-serif font-bold text-[#8A5A44] mb-1">
+                          Andrew Kayitani
+                        </div>
+                        <div className="text-[#C45D3A] font-semibold text-sm">
+                          Founder & CEO
+                        </div>
+                        <div className="text-xs text-neutral-600 mt-1 font-medium">
+                          Les Roches Switzerland Graduate
+                        </div>
+                      </div>
+
+                      {/* Enhanced CEO avatar */}
+                      <div className="relative group/avatar">
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#C45D3A] to-[#8A5A44] rounded-full animate-pulse"></div>
+                        <div className="relative w-16 h-16 bg-gradient-to-br from-[#E8C3A3] to-[#D4B896] rounded-full flex items-center justify-center text-[#8A5A44] font-serif font-bold text-lg shadow-lg border-2 border-white group-hover/avatar:scale-110 transition-transform duration-300">
+                          AK
+                        </div>
+                        {/* Professional badge */}
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#C45D3A] rounded-full flex items-center justify-center border-2 border-white">
+                          <span className="text-white text-xs font-bold">★</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-[#C45D3A] text-white">
         <div className="container mx-auto px-4 text-center">

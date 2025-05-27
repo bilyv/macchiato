@@ -14,7 +14,9 @@ backend/src/db/
 │   ├── rooms.sql              # Rooms table schema
 │   ├── contact_messages.sql   # Contact messages table schema
 │   ├── gallery_images.sql     # Gallery images table schema
-│   └── notification_bars.sql  # Notification bars table schema
+│   ├── notification_bars.sql  # Notification bars table schema
+│   ├── menu_items.sql         # Menu items table schema
+│   └── menu_images.sql        # Menu images table schema
 └── README.md                  # This documentation file
 ```
 
@@ -47,6 +49,18 @@ backend/src/db/
 - **Types**: info, warning, success, error
 - **Indexes**: is_active, dates, type
 
+### 6. Menu Items (`menu_items`)
+- **Purpose**: Stores menu item suggestions with detailed information for restaurant management
+- **Key Fields**: id, item_name, category, description, price, preparation_time, tags, image_url
+- **Categories**: breakfast, lunch, dinner
+- **Indexes**: category, price, preparation_time, created_at
+
+### 7. Menu Images (`menu_images`)
+- **Purpose**: Stores uploaded menu images organized by categories for restaurant display
+- **Key Fields**: id, title, category, image_url
+- **Categories**: drinks, desserts, others
+- **Indexes**: category, created_at
+
 ## Database Setup
 
 ### Using the Complete Schema
@@ -66,6 +80,8 @@ To set up tables individually, run the schema files in this order:
 5. `contact_messages.sql` - Contact messages table
 6. `gallery_images.sql` - Gallery images table
 7. `notification_bars.sql` - Notification bars table
+8. `menu_items.sql` - Menu items table
+9. `menu_images.sql` - Menu images table
 
 ## Features
 

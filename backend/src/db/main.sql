@@ -44,15 +44,14 @@ CREATE TABLE users (
 -- This table stores hotel room information including pricing, amenities, and availability
 CREATE TABLE rooms (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
+  room_number INTEGER NOT NULL UNIQUE,
   description TEXT NOT NULL,
   price_per_night DECIMAL(10, 2) NOT NULL,
   capacity INTEGER NOT NULL,
-  size_sqm DECIMAL(10, 2) NOT NULL,
-  bed_type TEXT NOT NULL,
+  room_type TEXT NOT NULL,
   image_url TEXT,
   amenities TEXT[] DEFAULT '{}',
-  category TEXT,
+  display_category TEXT,
   is_available BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -97,6 +96,32 @@ CREATE TABLE notification_bars (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Menu Items Table
+-- This table stores menu item suggestions with detailed information for restaurant management
+CREATE TABLE menu_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  item_name TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('breakfast', 'lunch', 'dinner')),
+  description TEXT NOT NULL,
+  price DECIMAL(10, 2) NOT NULL CHECK (price > 0),
+  preparation_time INTEGER NOT NULL CHECK (preparation_time > 0), -- in minutes
+  tags TEXT[] DEFAULT '{}',
+  image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Menu Images Table
+-- This table stores uploaded menu images organized by categories for restaurant display
+CREATE TABLE menu_images (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('drinks', 'desserts', 'others')),
+  image_url TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- =============================================================================
 -- TRIGGERS
 -- =============================================================================
@@ -127,6 +152,16 @@ CREATE TRIGGER update_notification_bars_updated_at
   FOR EACH ROW
   EXECUTE PROCEDURE update_updated_at_column();
 
+CREATE TRIGGER update_menu_items_updated_at
+  BEFORE UPDATE ON menu_items
+  FOR EACH ROW
+  EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER update_menu_images_updated_at
+  BEFORE UPDATE ON menu_images
+  FOR EACH ROW
+  EXECUTE PROCEDURE update_updated_at_column();
+
 -- =============================================================================
 -- INDEXES
 -- =============================================================================
@@ -136,10 +171,12 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 
 -- Rooms table indexes
+CREATE INDEX idx_rooms_room_number ON rooms(room_number);
 CREATE INDEX idx_rooms_price ON rooms(price_per_night);
 CREATE INDEX idx_rooms_capacity ON rooms(capacity);
 CREATE INDEX idx_rooms_available ON rooms(is_available);
-CREATE INDEX idx_rooms_category ON rooms(category);
+CREATE INDEX idx_rooms_display_category ON rooms(display_category);
+CREATE INDEX idx_rooms_room_type ON rooms(room_type);
 
 -- Contact messages table indexes
 CREATE INDEX idx_contact_read ON contact_messages(is_read);
@@ -154,3 +191,13 @@ CREATE INDEX idx_gallery_images_created_at ON gallery_images(created_at);
 CREATE INDEX idx_notification_bars_active ON notification_bars(is_active);
 CREATE INDEX idx_notification_bars_dates ON notification_bars(start_date, end_date);
 CREATE INDEX idx_notification_bars_type ON notification_bars(type);
+
+-- Menu items table indexes
+CREATE INDEX idx_menu_items_category ON menu_items(category);
+CREATE INDEX idx_menu_items_price ON menu_items(price);
+CREATE INDEX idx_menu_items_prep_time ON menu_items(preparation_time);
+CREATE INDEX idx_menu_items_created_at ON menu_items(created_at);
+
+-- Menu images table indexes
+CREATE INDEX idx_menu_images_category ON menu_images(category);
+CREATE INDEX idx_menu_images_created_at ON menu_images(created_at);

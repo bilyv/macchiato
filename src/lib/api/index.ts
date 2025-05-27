@@ -4,6 +4,7 @@ import contactApi from './contact';
 import notificationBarsApi from './notification-bars';
 import roomsApi from './rooms';
 import galleryApi from './gallery';
+import menuApi from './menu';
 
 // Combined API object
 export const api = {
@@ -11,6 +12,7 @@ export const api = {
   notificationBars: notificationBarsApi,
   rooms: roomsApi,
   gallery: galleryApi,
+  menu: menuApi,
 };
 
 // Export individual modules and utilities
@@ -19,6 +21,7 @@ export { contactApi };
 export { notificationBarsApi };
 export { roomsApi };
 export { galleryApi };
+export { menuApi };
 
 // Default export for backward compatibility
 export default api;

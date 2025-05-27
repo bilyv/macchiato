@@ -43,6 +43,16 @@ export const galleryStorage = new CloudinaryStorage({
   } as CloudinaryStorageParams
 });
 
+// Create and export Cloudinary storage for menu images
+export const menuStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'macchiato-menu',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 1200, height: 800, crop: 'limit' }]
+  } as CloudinaryStorageParams
+});
+
 /**
  * Helper function to extract public ID from Cloudinary URL
  * @param cloudinaryUrl - The full Cloudinary URL

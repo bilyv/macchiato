@@ -152,6 +152,12 @@ const Navbar = () => {
               >
                 Menu
               </Link>
+              <Link
+                to="/about-us"
+                className={`transition-colors ${isActive('/about-us') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
+              >
+                About Us
+              </Link>
             </nav>
 
             {/* Center Logo - Desktop */}
@@ -221,6 +227,14 @@ const Navbar = () => {
                         className={`text-sm font-medium transition-colors w-full ${isActive('/menu') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
                       >
                         Menu
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer mobile-dropdown-item rounded-md p-1.5">
+                      <Link
+                        to="/about-us"
+                        className={`text-sm font-medium transition-colors w-full ${isActive('/about-us') ? 'text-[#C45D3A]' : 'text-neutral-800 hover:text-[#C45D3A]'}`}
+                      >
+                        About Us
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="cursor-pointer mobile-dropdown-item rounded-md p-1.5">

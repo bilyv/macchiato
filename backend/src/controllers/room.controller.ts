@@ -15,7 +15,10 @@ interface MulterRequest extends Request {
 
 // Validation schemas
 const roomSchema = z.object({
-  name: z.string().min(1, 'Room name is required'),
+  room_number: z.union([
+    z.number().int().positive('Room number must be a positive integer'),
+    z.string().transform(val => parseInt(val) || 0)
+  ]).refine(val => val > 0, 'Room number must be a positive integer'),
   description: z.string().min(1, 'Description is required'),
   price_per_night: z.union([
     z.number().positive('Price must be positive'),
@@ -25,13 +28,9 @@ const roomSchema = z.object({
     z.number().int().positive('Capacity must be a positive integer'),
     z.string().transform(val => parseInt(val) || 0)
   ]).refine(val => val > 0, 'Capacity must be a positive integer'),
-  size_sqm: z.union([
-    z.number().positive('Size must be positive'),
-    z.string().transform(val => parseFloat(val) || 0)
-  ]).refine(val => val > 0, 'Size must be positive'),
-  bed_type: z.string().min(1, 'Bed type is required'),
+  room_type: z.string().min(1, 'Room type is required'),
   amenities: z.array(z.string()).optional(),
-  category: z.string().optional(),
+  display_category: z.string().optional(),
   is_available: z.boolean().default(true)
 });
 
@@ -39,7 +38,7 @@ const roomSchema = z.object({
 export const getAllRooms = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await query(
-      'SELECT * FROM rooms ORDER BY created_at DESC'
+      'SELECT * FROM rooms ORDER BY room_number ASC'
     );
 
     res.status(200).json({
@@ -114,20 +113,19 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
     // Insert room into database
     const result = await query(
       `INSERT INTO rooms (
-        name, description, price_per_night, capacity, size_sqm,
-        bed_type, image_url, amenities, category, is_available
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        room_number, description, price_per_night, capacity,
+        room_type, image_url, amenities, display_category, is_available
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
-        roomData.name,
+        roomData.room_number,
         roomData.description,
         roomData.price_per_night,
         roomData.capacity,
-        roomData.size_sqm,
-        roomData.bed_type,
+        roomData.room_type,
         imageUrl,
         roomData.amenities || [],
-        roomData.category || null,
+        roomData.display_category || null,
         roomData.is_available
       ]
     );
@@ -137,6 +135,8 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
       data: result.rows[0]
     });
   } catch (error) {
+    console.error('Error in createRoom:', error);
+
     // If there was an uploaded file but the database operation failed, delete the uploaded image
     if (req.file && req.file.path) {
       try {
@@ -150,9 +150,23 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
     }
 
     if (error instanceof z.ZodError) {
-      next(new AppError(error.message, 400));
+      const errorDetails = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      next(new AppError(`Validation error: ${errorDetails}`, 400));
+    } else if (error instanceof AppError) {
+      next(error);
     } else {
-      next(new AppError('Error creating room', 500));
+      console.error('Unexpected error creating room:', error);
+
+      // Handle specific database errors
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key value violates unique constraint "rooms_room_number_key"')) {
+          next(new AppError(`Room number ${roomData.room_number} already exists. Please choose a different room number.`, 409));
+        } else {
+          next(new AppError(`Error creating room: ${error.message}`, 500));
+        }
+      } else {
+        next(new AppError('Error creating room: Unknown error', 500));
+      }
     }
   }
 };
@@ -213,29 +227,27 @@ export const updateRoom = async (req: MulterRequest, res: Response, next: NextFu
     // Update room in database
     const result = await query(
       `UPDATE rooms SET
-        name = $1,
+        room_number = $1,
         description = $2,
         price_per_night = $3,
         capacity = $4,
-        size_sqm = $5,
-        bed_type = $6,
-        image_url = $7,
-        amenities = $8,
-        category = $9,
-        is_available = $10,
+        room_type = $5,
+        image_url = $6,
+        amenities = $7,
+        display_category = $8,
+        is_available = $9,
         updated_at = NOW()
-      WHERE id = $11
+      WHERE id = $10
       RETURNING *`,
       [
-        roomData.name,
+        roomData.room_number,
         roomData.description,
         roomData.price_per_night,
         roomData.capacity,
-        roomData.size_sqm,
-        roomData.bed_type,
+        roomData.room_type,
         imageUrl,
         roomData.amenities || [],
-        roomData.category || null,
+        roomData.display_category || null,
         roomData.is_available,
         id
       ]

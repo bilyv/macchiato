@@ -93,14 +93,13 @@ export const createGalleryImage = async (req: MulterRequest, res: Response, next
     // Insert gallery image into database
     const result = await query(
       `INSERT INTO gallery_images (
-        title, description, category, is_featured, image_url
-      ) VALUES ($1, $2, $3, $4, $5)
+        title, description, category, image_url
+      ) VALUES ($1, $2, $3, $4)
       RETURNING *`,
       [
         imageData.title,
         imageData.description || '',
         imageData.category,
-        imageData.is_featured,
         imageUrl
       ]
     );
@@ -110,6 +109,9 @@ export const createGalleryImage = async (req: MulterRequest, res: Response, next
       data: result.rows[0]
     });
   } catch (error) {
+    // Log the actual error for debugging
+    console.error('Gallery creation error:', error);
+
     // If there was an uploaded file but the database operation failed, delete the uploaded image
     if (req.file && req.file.path) {
       try {
@@ -123,11 +125,11 @@ export const createGalleryImage = async (req: MulterRequest, res: Response, next
     }
 
     if (error instanceof z.ZodError) {
-      next(new AppError(error.message, 400));
+      next(new AppError(`Validation error: ${error.errors.map(e => e.message).join(', ')}`, 400));
     } else if (error instanceof AppError) {
       next(error);
     } else {
-      next(new AppError('Error creating gallery image', 500));
+      next(new AppError(`Error creating gallery image: ${error instanceof Error ? error.message : 'Unknown error'}`, 500));
     }
   }
 };

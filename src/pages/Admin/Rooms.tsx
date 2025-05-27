@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, BedDouble, Upload, Loader2, X } from 'lucide-react';
+import { Pencil, Trash2, Plus, BedDouble, Loader2, X, Copy } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import {
   Dialog,
@@ -40,6 +40,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 
 const AdminRooms = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -50,34 +56,64 @@ const AdminRooms = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [currentAmenity, setCurrentAmenity] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('all-rooms');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Multiple rooms state
+  const [multipleRoomsData, setMultipleRoomsData] = useState({
+    roomType: '',
+    fromRoom: 1,
+    toRoom: 1,
+    pricePerNight: 0,
+    capacity: 1,
+  });
+  const [isCreatingMultiple, setIsCreatingMultiple] = useState(false);
+  const [classifiedRooms, setClassifiedRooms] = useState<Room[]>([]);
+
   const [newRoom, setNewRoom] = useState<RoomFormData>({
-    name: '',
+    room_number: 0,
     description: '',
     price_per_night: 0,
     capacity: 1,
-    size_sqm: 0,
-    bed_type: '',
+    room_type: '',
     amenities: [],
-    category: '',
+    display_category: '',
     is_available: true,
   });
 
   useEffect(() => {
     fetchRooms();
+    fetchClassifiedRooms();
   }, []);
 
   const fetchRooms = async () => {
     setIsLoading(true);
     try {
       const response = await api.rooms.getAll();
-      setRooms(response.data);
+      // Filter out rooms that were created through classify (have display_category set)
+      const siteRooms = response.data.filter((room: Room) => {
+        return !room.display_category || room.display_category.trim() === '';
+      });
+      setRooms(siteRooms);
     } catch (error) {
       console.error('Error fetching rooms:', error);
       toast.error('Failed to load rooms');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch rooms that were created through the classify feature
+  const fetchClassifiedRooms = async () => {
+    try {
+      const response = await api.rooms.getAll();
+      // Filter rooms that have display_category set (indicating they were created through classify)
+      const classified = response.data.filter((room: Room) => {
+        return room.display_category && room.display_category.trim() !== '';
+      });
+      setClassifiedRooms(classified);
+    } catch (error) {
+      console.error('Error fetching classified rooms:', error);
     }
   };
 
@@ -87,9 +123,9 @@ const AdminRooms = () => {
     // Ensure numeric values are properly converted to numbers
     const roomData: RoomFormData = {
       ...newRoom,
+      room_number: Number(newRoom.room_number),
       price_per_night: Number(newRoom.price_per_night),
-      capacity: Number(newRoom.capacity),
-      size_sqm: Number(newRoom.size_sqm)
+      capacity: Number(newRoom.capacity)
     };
 
     setIsSubmitting(true);
@@ -99,14 +135,13 @@ const AdminRooms = () => {
 
       // Reset form
       setNewRoom({
-        name: '',
+        room_number: 0,
         description: '',
         price_per_night: 0,
         capacity: 1,
-        size_sqm: 0,
-        bed_type: '',
+        room_type: '',
         amenities: [],
-        category: '',
+        display_category: '',
         is_available: true,
       });
       setSelectedImage(null);
@@ -115,8 +150,9 @@ const AdminRooms = () => {
         fileInputRef.current.value = '';
       }
 
-      // Refresh room list
+      // Refresh room lists
       fetchRooms();
+      fetchClassifiedRooms();
     } catch (error) {
       console.error('Error creating room:', error);
       if (error instanceof Error) {
@@ -133,18 +169,17 @@ const AdminRooms = () => {
     if (!editingRoom) return;
 
     const roomData: RoomFormData = {
-      name: editingRoom.name,
+      room_number: Number(editingRoom.room_number),
       description: editingRoom.description,
       price_per_night: Number(editingRoom.price_per_night),
       capacity: Number(editingRoom.capacity),
-      size_sqm: Number(editingRoom.size_sqm),
-      bed_type: editingRoom.bed_type,
+      room_type: editingRoom.room_type,
       amenities: editingRoom.amenities,
-      category: editingRoom.category,
+      display_category: editingRoom.display_category,
       is_available: editingRoom.is_available,
     };
 
-    if (!validateRoomData(roomData)) return;
+    if (!validateRoomData(roomData, true, editingRoom.id)) return;
 
     setIsSubmitting(true);
     try {
@@ -159,8 +194,9 @@ const AdminRooms = () => {
         fileInputRef.current.value = '';
       }
 
-      // Refresh room list
+      // Refresh room lists
       fetchRooms();
+      fetchClassifiedRooms();
     } catch (error) {
       console.error('Error updating room:', error);
       if (error instanceof Error) {
@@ -179,6 +215,7 @@ const AdminRooms = () => {
     try {
       await api.rooms.delete(roomToDelete);
       setRooms(rooms.filter(room => room.id !== roomToDelete));
+      setClassifiedRooms(classifiedRooms.filter(room => room.id !== roomToDelete));
       toast.success('Room deleted successfully');
     } catch (error) {
       console.error('Error deleting room:', error);
@@ -206,11 +243,20 @@ const AdminRooms = () => {
     }
   };
 
-  const validateRoomData = (data: RoomFormData): boolean => {
-    if (!data.name.trim()) {
-      toast.error('Room name is required');
+  const validateRoomData = (data: RoomFormData, isEdit: boolean = false, editingRoomId?: string): boolean => {
+    if (data.room_number <= 0) {
+      toast.error('Room number must be greater than 0');
       return false;
     }
+
+    // Check for duplicate room numbers across both site rooms and classified rooms
+    const allRooms = [...rooms, ...classifiedRooms];
+    const existingRoom = allRooms.find(room => room.room_number === data.room_number);
+    if (existingRoom && (!isEdit || existingRoom.id !== editingRoomId)) {
+      toast.error(`Room number ${data.room_number} already exists. Please choose a different room number.`);
+      return false;
+    }
+
     if (!data.description.trim()) {
       toast.error('Description is required');
       return false;
@@ -223,12 +269,8 @@ const AdminRooms = () => {
       toast.error('Capacity must be greater than 0');
       return false;
     }
-    if (data.size_sqm <= 0) {
-      toast.error('Size must be greater than 0');
-      return false;
-    }
-    if (!data.bed_type.trim()) {
-      toast.error('Bed type is required');
+    if (!data.room_type.trim()) {
+      toast.error('Room type is required');
       return false;
     }
     return true;
@@ -284,230 +326,354 @@ const AdminRooms = () => {
     }).format(price);
   };
 
+  // Handle creating multiple rooms
+  const handleCreateMultipleRooms = async () => {
+    const { roomType, fromRoom, toRoom, pricePerNight, capacity } = multipleRoomsData;
+
+    // Validation
+    if (!roomType.trim()) {
+      toast.error('Room type is required');
+      return;
+    }
+    if (fromRoom > toRoom) {
+      toast.error('From room number must be less than or equal to To room number');
+      return;
+    }
+    if (pricePerNight <= 0) {
+      toast.error('Price per night must be greater than 0');
+      return;
+    }
+    if (capacity <= 0) {
+      toast.error('Capacity must be greater than 0');
+      return;
+    }
+
+    // Check for existing room numbers across both site rooms and classified rooms
+    const allRooms = [...rooms, ...classifiedRooms];
+    const existingRoomNumbers = allRooms.map(room => room.room_number);
+    const conflictingRooms = [];
+    for (let roomNumber = fromRoom; roomNumber <= toRoom; roomNumber++) {
+      if (existingRoomNumbers.includes(roomNumber)) {
+        conflictingRooms.push(roomNumber);
+      }
+    }
+
+    if (conflictingRooms.length > 0) {
+      toast.error(`Room numbers already exist: ${conflictingRooms.join(', ')}. Please choose different room numbers.`);
+      return;
+    }
+
+    setIsCreatingMultiple(true);
+    try {
+      const roomsToCreate = [];
+
+      // Generate room data for each room number
+      for (let roomNumber = fromRoom; roomNumber <= toRoom; roomNumber++) {
+        const roomData: RoomFormData = {
+          room_number: roomNumber,
+          description: `${roomType} room number ${roomNumber}`,
+          price_per_night: Number(pricePerNight),
+          capacity: Number(capacity),
+          room_type: roomType,
+          amenities: [],
+          display_category: roomType,
+          is_available: true,
+        };
+        roomsToCreate.push(roomData);
+      }
+
+      // Create rooms one by one to handle individual failures better
+      const results = [];
+      const failures = [];
+
+      for (const roomData of roomsToCreate) {
+        try {
+          const result = await api.rooms.create(roomData);
+          results.push(result);
+        } catch (error) {
+          console.error(`Failed to create room ${roomData.room_number}:`, error);
+          failures.push({
+            roomNumber: roomData.room_number,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      // Show results
+      if (results.length > 0) {
+        toast.success(`Successfully created ${results.length} room${results.length !== 1 ? 's' : ''}`);
+      }
+
+      if (failures.length > 0) {
+        const failureMessages = failures.map(f => `Room ${f.roomNumber}: ${f.error}`).join('\n');
+        toast.error(`Failed to create ${failures.length} room${failures.length !== 1 ? 's' : ''}:\n${failureMessages}`);
+      }
+
+      // Reset form only if at least one room was created successfully
+      if (results.length > 0) {
+        setMultipleRoomsData({
+          roomType: '',
+          fromRoom: 1,
+          toRoom: 1,
+          pricePerNight: 0,
+          capacity: 1,
+        });
+      }
+
+      // Refresh room lists
+      fetchRooms();
+      fetchClassifiedRooms();
+    } catch (error) {
+      console.error('Error creating multiple rooms:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to create rooms: ${error.message}`);
+      } else {
+        toast.error('Failed to create rooms');
+      }
+    } finally {
+      setIsCreatingMultiple(false);
+    }
+  };
+
+  // Calculate number of rooms to be created
+  const getRoomCount = () => {
+    const { fromRoom, toRoom } = multipleRoomsData;
+    return Math.max(0, toRoom - fromRoom + 1);
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Rooms</h1>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Room
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px]">
-              <DialogHeader>
-                <DialogTitle>Add New Room</DialogTitle>
-                <DialogDescription>
-                  Create a new room to display on your website.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-3 py-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="name">Room Name</Label>
-                    <Input
-                      id="name"
-                      value={newRoom.name}
-                      onChange={(e) => setNewRoom({...newRoom, name: e.target.value})}
-                      placeholder="Deluxe Suite"
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="price">Price Per Night ($)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={newRoom.price_per_night || ''}
-                      onChange={(e) => setNewRoom({...newRoom, price_per_night: parseFloat(e.target.value) || 0})}
-                      placeholder="299.99"
-                      className="h-8"
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="category">Room Category</Label>
-                  <select
-                    id="category"
-                    value={newRoom.category || ''}
-                    onChange={(e) => setNewRoom({...newRoom, category: e.target.value})}
-                    className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Select a category (optional)</option>
-                    <option value="Featured Rooms">Featured Rooms</option>
-                    <option value="Our Elegant Suites">Our Elegant Suites</option>
-                    <option value="Premium Rooms">Premium Rooms</option>
-                    <option value="Family Rooms">Family Rooms</option>
-                    <option value="Budget Friendly">Budget Friendly</option>
-                  </select>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={newRoom.description}
-                    onChange={(e) => setNewRoom({...newRoom, description: e.target.value})}
-                    placeholder="Spacious room with a king-size bed and city views."
-                    rows={2}
-                    className="text-sm"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="capacity">Capacity</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      value={newRoom.capacity || ''}
-                      onChange={(e) => setNewRoom({...newRoom, capacity: parseInt(e.target.value) || 0})}
-                      placeholder="2"
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="size">Size (sqm)</Label>
-                    <Input
-                      id="size"
-                      type="number"
-                      value={newRoom.size_sqm || ''}
-                      onChange={(e) => setNewRoom({...newRoom, size_sqm: parseFloat(e.target.value) || 0})}
-                      placeholder="35"
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="bed_type">Bed Type</Label>
-                    <Input
-                      id="bed_type"
-                      value={newRoom.bed_type}
-                      onChange={(e) => setNewRoom({...newRoom, bed_type: e.target.value})}
-                      placeholder="King Size"
-                      className="h-8"
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="amenities">Amenities</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="amenities"
-                      value={currentAmenity}
-                      onChange={(e) => setCurrentAmenity(e.target.value)}
-                      placeholder="e.g., WiFi, Air Conditioning"
-                      className="flex-1 h-8 text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddAmenity();
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={handleAddAmenity}
-                      className="h-8"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add
-                    </Button>
-                  </div>
-                  {newRoom.amenities.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {newRoom.amenities.map((amenity, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="flex items-center gap-1 px-1.5 py-0.5 text-xs"
-                        >
-                          {amenity}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAmenity(amenity)}
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label htmlFor="image">Room Image</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="image"
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="flex-1 h-8 text-sm"
-                    />
-                    {imagePreview && (
-                      <div className="w-12 h-12 relative overflow-hidden rounded-md">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="available"
-                    checked={newRoom.is_available}
-                    onCheckedChange={(checked) => setNewRoom({...newRoom, is_available: checked})}
-                  />
-                  <Label htmlFor="available" className="text-sm">Available for booking</Label>
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button
-                  onClick={handleCreateRoom}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create Room'
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 animate-pulse rounded bg-muted"></div>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>All Rooms</CardTitle>
-              <CardDescription>
-                Manage your hotel rooms and their details
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        {/* Tabs for different room management sections */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="all-rooms" className="flex items-center gap-2">
+              <BedDouble className="h-4 w-4" />
+              Add to Site
+            </TabsTrigger>
+            <TabsTrigger value="classify" className="flex items-center gap-2">
+              <Copy className="h-4 w-4" />
+              Classify
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Add to Site Tab Content */}
+          <TabsContent value="all-rooms" className="space-y-4">
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 animate-pulse rounded bg-muted"></div>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Add to Site</CardTitle>
+                      <CardDescription>
+                        Manage rooms that will be displayed on your website
+                      </CardDescription>
+                    </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add to Site
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[450px]">
+                        <DialogHeader>
+                          <DialogTitle>Add New Room to Site</DialogTitle>
+                          <DialogDescription>
+                            Create a new room to display on your website.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-3 py-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="grid gap-1.5">
+                              <Label htmlFor="room_number">Room Number</Label>
+                              <Input
+                                id="room_number"
+                                type="number"
+                                value={newRoom.room_number || ''}
+                                onChange={(e) => setNewRoom({...newRoom, room_number: parseInt(e.target.value) || 0})}
+                                placeholder="101"
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="grid gap-1.5">
+                              <Label htmlFor="price">Price Per Night ($)</Label>
+                              <Input
+                                id="price"
+                                type="number"
+                                value={newRoom.price_per_night || ''}
+                                onChange={(e) => setNewRoom({...newRoom, price_per_night: parseFloat(e.target.value) || 0})}
+                                placeholder="299.99"
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <Label htmlFor="display_category">Display Category</Label>
+                            <select
+                              id="display_category"
+                              value={newRoom.display_category || ''}
+                              onChange={(e) => setNewRoom({...newRoom, display_category: e.target.value})}
+                              className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <option value="">Select a category (optional)</option>
+                              <option value="Featured Rooms">Featured Rooms</option>
+                              <option value="Our Elegant Suites">Our Elegant Suites</option>
+                              <option value="Premium Rooms">Premium Rooms</option>
+                              <option value="Family Rooms">Family Rooms</option>
+                              <option value="Budget Friendly">Budget Friendly</option>
+                            </select>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                              id="description"
+                              value={newRoom.description}
+                              onChange={(e) => setNewRoom({...newRoom, description: e.target.value})}
+                              placeholder="Spacious room with a king-size bed and city views."
+                              rows={2}
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="grid gap-1.5">
+                              <Label htmlFor="capacity">Capacity</Label>
+                              <Input
+                                id="capacity"
+                                type="number"
+                                value={newRoom.capacity || ''}
+                                onChange={(e) => setNewRoom({...newRoom, capacity: parseInt(e.target.value) || 0})}
+                                placeholder="2"
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="grid gap-1.5">
+                              <Label htmlFor="room_type">Room Type</Label>
+                              <Input
+                                id="room_type"
+                                value={newRoom.room_type}
+                                onChange={(e) => setNewRoom({...newRoom, room_type: e.target.value})}
+                                placeholder="Standard Room"
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid gap-1.5">
+                            <Label htmlFor="amenities">Amenities</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                id="amenities"
+                                value={currentAmenity}
+                                onChange={(e) => setCurrentAmenity(e.target.value)}
+                                placeholder="e.g., WiFi, Air Conditioning"
+                                className="flex-1 h-8 text-sm"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddAmenity();
+                                  }
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleAddAmenity}
+                                className="h-8"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Add
+                              </Button>
+                            </div>
+                            {newRoom.amenities.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {newRoom.amenities.map((amenity, index) => (
+                                  <Badge
+                                    key={index}
+                                    variant="secondary"
+                                    className="flex items-center gap-1 px-1.5 py-0.5 text-xs"
+                                  >
+                                    {amenity}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveAmenity(amenity)}
+                                      className="text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                      <X className="h-2.5 w-2.5" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="grid gap-1.5">
+                            <Label htmlFor="image">Room Image</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                id="image"
+                                type="file"
+                                ref={fileInputRef}
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="flex-1 h-8 text-sm"
+                              />
+                              {imagePreview && (
+                                <div className="w-12 h-12 relative overflow-hidden rounded-md">
+                                  <img
+                                    src={imagePreview}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="available"
+                              checked={newRoom.is_available}
+                              onCheckedChange={(checked) => setNewRoom({...newRoom, is_available: checked})}
+                            />
+                            <Label htmlFor="available" className="text-sm">Available for booking</Label>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button
+                            onClick={handleCreateRoom}
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating...
+                              </>
+                            ) : (
+                              'Add to Site'
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
               {rooms.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <BedDouble className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                  <p>No rooms created yet</p>
+                  <p>No site rooms created yet</p>
                   <p className="text-sm">Create rooms to display on your website</p>
                 </div>
               ) : (
@@ -515,11 +681,11 @@ const AdminRooms = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Image</TableHead>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Room #</TableHead>
+                      <TableHead>Room Type</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Price</TableHead>
                       <TableHead>Capacity</TableHead>
-                      <TableHead>Amenities</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -532,7 +698,7 @@ const AdminRooms = () => {
                             <div className="w-12 h-12 relative overflow-hidden rounded-md">
                               <img
                                 src={room.image_url}
-                                alt={room.name}
+                                alt={`Room ${room.room_number}`}
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -542,34 +708,19 @@ const AdminRooms = () => {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="font-medium">{room.name}</TableCell>
+                        <TableCell className="font-medium">#{room.room_number}</TableCell>
                         <TableCell>
-                          {room.category ? (
-                            <Badge variant="secondary">{room.category}</Badge>
+                          <Badge variant="outline">{room.room_type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {room.display_category ? (
+                            <Badge variant="secondary">{room.display_category}</Badge>
                           ) : (
                             <span className="text-muted-foreground text-xs">None</span>
                           )}
                         </TableCell>
                         <TableCell>{formatPrice(room.price_per_night)}</TableCell>
                         <TableCell>{room.capacity} {room.capacity === 1 ? 'person' : 'people'}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {room.amenities.length > 0 ? (
-                              room.amenities.slice(0, 3).map((amenity, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {amenity}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-muted-foreground text-xs">None</span>
-                            )}
-                            {room.amenities.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{room.amenities.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
                         <TableCell>
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -611,13 +762,14 @@ const AdminRooms = () => {
                                   <div className="grid gap-3 py-3">
                                     <div className="grid grid-cols-2 gap-3">
                                       <div className="grid gap-1.5">
-                                        <Label htmlFor="edit-name">Room Name</Label>
+                                        <Label htmlFor="edit-room-number">Room Number</Label>
                                         <Input
-                                          id="edit-name"
-                                          value={editingRoom.name}
+                                          id="edit-room-number"
+                                          type="number"
+                                          value={editingRoom.room_number || ''}
                                           onChange={(e) => setEditingRoom({
                                             ...editingRoom,
-                                            name: e.target.value
+                                            room_number: parseInt(e.target.value) || 0
                                           })}
                                           className="h-8"
                                         />
@@ -637,13 +789,13 @@ const AdminRooms = () => {
                                       </div>
                                     </div>
                                     <div className="grid gap-1.5">
-                                      <Label htmlFor="edit-category">Room Category</Label>
+                                      <Label htmlFor="edit-display-category">Display Category</Label>
                                       <select
-                                        id="edit-category"
-                                        value={editingRoom.category || ''}
+                                        id="edit-display-category"
+                                        value={editingRoom.display_category || ''}
                                         onChange={(e) => setEditingRoom({
                                           ...editingRoom,
-                                          category: e.target.value
+                                          display_category: e.target.value
                                         })}
                                         className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                       >
@@ -668,7 +820,7 @@ const AdminRooms = () => {
                                         className="text-sm"
                                       />
                                     </div>
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-2 gap-3">
                                       <div className="grid gap-1.5">
                                         <Label htmlFor="edit-capacity">Capacity</Label>
                                         <Input
@@ -683,27 +835,15 @@ const AdminRooms = () => {
                                         />
                                       </div>
                                       <div className="grid gap-1.5">
-                                        <Label htmlFor="edit-size">Size (sqm)</Label>
+                                        <Label htmlFor="edit-room-type">Room Type</Label>
                                         <Input
-                                          id="edit-size"
-                                          type="number"
-                                          value={editingRoom.size_sqm || ''}
+                                          id="edit-room-type"
+                                          value={editingRoom.room_type}
                                           onChange={(e) => setEditingRoom({
                                             ...editingRoom,
-                                            size_sqm: parseFloat(e.target.value) || 0
+                                            room_type: e.target.value
                                           })}
-                                          className="h-8"
-                                        />
-                                      </div>
-                                      <div className="grid gap-1.5">
-                                        <Label htmlFor="edit-bed-type">Bed Type</Label>
-                                        <Input
-                                          id="edit-bed-type"
-                                          value={editingRoom.bed_type}
-                                          onChange={(e) => setEditingRoom({
-                                            ...editingRoom,
-                                            bed_type: e.target.value
-                                          })}
+                                          placeholder="Standard Room"
                                           className="h-8"
                                         />
                                       </div>
@@ -849,9 +989,238 @@ const AdminRooms = () => {
                   </TableBody>
                 </Table>
               )}
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Classify Tab Content */}
+          <TabsContent value="classify" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Classify Rooms</CardTitle>
+                <CardDescription>
+                  Create multiple rooms of the same type with sequential numbering
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Copy className="h-4 w-4" />
+                        Add Multiple
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[450px]">
+                      <DialogHeader>
+                        <DialogTitle>Create Multiple Rooms</DialogTitle>
+                        <DialogDescription>
+                          Create multiple rooms of the same type with sequential room numbers.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="room-type">Room Type</Label>
+                          <Input
+                            id="room-type"
+                            value={multipleRoomsData.roomType}
+                            onChange={(e) => setMultipleRoomsData({
+                              ...multipleRoomsData,
+                              roomType: e.target.value
+                            })}
+                            placeholder="e.g., Deluxe Suite, Standard Room"
+                            className="h-9"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="grid gap-2">
+                            <Label htmlFor="from-room">From Room</Label>
+                            <Input
+                              id="from-room"
+                              type="number"
+                              min="1"
+                              value={multipleRoomsData.fromRoom}
+                              onChange={(e) => setMultipleRoomsData({
+                                ...multipleRoomsData,
+                                fromRoom: parseInt(e.target.value) || 1
+                              })}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="to-room">To Room</Label>
+                            <Input
+                              id="to-room"
+                              type="number"
+                              min="1"
+                              value={multipleRoomsData.toRoom}
+                              onChange={(e) => setMultipleRoomsData({
+                                ...multipleRoomsData,
+                                toRoom: parseInt(e.target.value) || 1
+                              })}
+                              className="h-9"
+                            />
+                          </div>
+                        </div>
+
+                        {getRoomCount() > 0 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm text-blue-800">
+                              <strong>Rooms to create:</strong> {getRoomCount()} rooms
+                              {getRoomCount() > 1 && (
+                                <span className="block text-xs mt-1">
+                                  ({multipleRoomsData.roomType} {multipleRoomsData.fromRoom} to {multipleRoomsData.roomType} {multipleRoomsData.toRoom})
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="grid gap-2">
+                            <Label htmlFor="price-per-night">Price Per Night ($)</Label>
+                            <Input
+                              id="price-per-night"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={multipleRoomsData.pricePerNight || ''}
+                              onChange={(e) => setMultipleRoomsData({
+                                ...multipleRoomsData,
+                                pricePerNight: parseFloat(e.target.value) || 0
+                              })}
+                              placeholder="299.99"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="capacity">Capacity</Label>
+                            <Input
+                              id="capacity"
+                              type="number"
+                              min="1"
+                              value={multipleRoomsData.capacity}
+                              onChange={(e) => setMultipleRoomsData({
+                                ...multipleRoomsData,
+                                capacity: parseInt(e.target.value) || 1
+                              })}
+                              className="h-9"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          onClick={handleCreateMultipleRooms}
+                          disabled={isCreatingMultiple || getRoomCount() === 0}
+                        >
+                          {isCreatingMultiple ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating {getRoomCount()} rooms...
+                            </>
+                          ) : (
+                            `Create ${getRoomCount()} Room${getRoomCount() !== 1 ? 's' : ''}`
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Classified Rooms List */}
+                {classifiedRooms.length > 0 && (
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold mb-4">Classified Rooms ({classifiedRooms.length})</h3>
+                    <div className="border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Room #</TableHead>
+                            <TableHead>Room Type</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Capacity</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {classifiedRooms.map((room) => (
+                            <TableRow key={room.id}>
+                              <TableCell className="font-medium">#{room.room_number}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{room.room_type}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                {room.display_category ? (
+                                  <Badge variant="secondary">{room.display_category}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">None</span>
+                                )}
+                              </TableCell>
+                              <TableCell>{formatPrice(room.price_per_night)}</TableCell>
+                              <TableCell>{room.capacity} {room.capacity === 1 ? 'person' : 'people'}</TableCell>
+                              <TableCell>
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    room.is_available
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {room.is_available ? 'Available' : 'Unavailable'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingRoom(room);
+                                      setImagePreview(room.image_url);
+                                      setSelectedImage(null);
+                                      if (fileInputRef.current) {
+                                        fileInputRef.current.value = '';
+                                      }
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setRoomToDelete(room.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+                {classifiedRooms.length === 0 && (
+                  <div className="mt-8 text-center py-8 text-gray-500">
+                    <Copy className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No classified rooms created yet</p>
+                    <p className="text-sm">Use the "Add Multiple" button above to create rooms in bulk</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );

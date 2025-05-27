@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes.js';
 import contactRoutes from './routes/contact.routes.js';
 import roomRoutes from './routes/room.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
+import menuRoutes from './routes/menu.routes.js';
 // Using public notification bar routes for testing
 import notificationBarPublicRoutes from './routes/notification-bar-public.routes.js';
 import './config/database.js'; // Initialize database connection
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/gallery', galleryRoutes);
+app.use('/api/menu', menuRoutes);
 // Use the public notification bar routes for testing
 app.use('/api/notification-bars', notificationBarPublicRoutes);
 

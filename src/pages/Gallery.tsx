@@ -1,121 +1,134 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Camera, MapPin, Utensils, Calendar } from "lucide-react";
+import { Camera, MapPin, Utensils, Calendar, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HorizontalScrollGallery from "@/components/HorizontalScrollGallery";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
+import { api } from "@/lib/api";
+import { toast } from "@/components/ui/sonner";
+
+// Interface for gallery images from API
+interface GalleryImage {
+  id: string;
+  title: string;
+  description?: string;
+  category: 'attractions' | 'neighbourhood' | 'foods' | 'events';
+  image_url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interface for transformed images for HorizontalScrollGallery
+interface TransformedGalleryImage {
+  src: string;
+  alt: string;
+  category: string;
+  description: string;
+}
 
 const Gallery = () => {
   // State for active category
   const [activeCategory, setActiveCategory] = useState("All");
 
-  // Gallery images array with new categories
-  const galleryImages = [
-    // Attractions
-    {
-      src: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=2069",
-      alt: "Eiffel Tower",
-      category: "Attractions",
-      description: "Famous landmark just a short drive from our hotel"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1564594736624-def7a10ab047?q=80&w=2574",
-      alt: "Modern Art Museum",
-      category: "Attractions",
-      description: "Contemporary art exhibits within walking distance"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1569959220744-ff553533f492?q=80&w=2573",
-      alt: "Historical Cathedral",
-      category: "Attractions",
-      description: "Gothic architecture from the 14th century"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1534430480872-3498386e7856?q=80&w=2670",
-      alt: "Amusement Park",
-      category: "Attractions",
-      description: "Family fun just 15 minutes from the hotel"
-    },
+  // State for gallery images from API
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    // Neighborhoods
-    {
-      src: "https://images.unsplash.com/photo-1555636222-cae831e670b3?q=80&w=2670",
-      alt: "Historic District",
-      category: "Neighborhoods",
-      description: "Charming streets with boutique shops"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1603460217649-decaca7e73c4?q=80&w=2574",
-      alt: "Riverside Quarter",
-      category: "Neighborhoods",
-      description: "Scenic walks along the waterfront"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1544085311-11a028465b03?q=80&w=2670",
-      alt: "Arts District",
-      category: "Neighborhoods",
-      description: "Vibrant area with galleries and cafes"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2664",
-      alt: "Local Market Square",
-      category: "Neighborhoods",
-      description: "Experience authentic local culture"
-    },
-
-    // Foods
-    {
-      src: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2670",
-      alt: "Fine Dining Restaurant",
-      category: "Foods",
-      description: "Award-winning cuisine at our signature restaurant"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2670",
-      alt: "Local Delicacies",
-      category: "Foods",
-      description: "Traditional dishes prepared with local ingredients"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1579954115545-a95591f28bfc?q=80&w=2670",
-      alt: "Artisanal Pastries",
-      category: "Foods",
-      description: "Freshly baked goods from our in-house patisserie"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=2574",
-      alt: "Coffee Experience",
-      category: "Foods",
-      description: "Premium coffee blends at our Macchiato Bar"
-    },
-
-    // Events
-    {
-      src: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2669",
-      alt: "Wedding Reception",
-      category: "Events",
-      description: "Elegant venues for your special day"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=2612",
-      alt: "Business Conference",
-      category: "Events",
-      description: "State-of-the-art facilities for corporate events"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=2670",
-      alt: "Music Festival",
-      category: "Events",
-      description: "Annual cultural events near our hotel"
-    },
-    {
-      src: "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?q=80&w=2670",
-      alt: "Cooking Workshop",
-      category: "Events",
-      description: "Interactive culinary experiences with our chefs"
+  // Function to map API categories to display categories
+  const mapCategoryToDisplay = (apiCategory: string): string => {
+    switch (apiCategory) {
+      case 'attractions':
+        return 'Attractions';
+      case 'neighbourhood':
+        return 'Neighborhoods';
+      case 'foods':
+        return 'Foods';
+      case 'events':
+        return 'Events';
+      default:
+        return apiCategory;
     }
-  ];
+  };
+
+  // Function to transform API images to component format
+  const transformGalleryImages = (images: GalleryImage[]): TransformedGalleryImage[] => {
+    return images.map(image => ({
+      src: image.image_url,
+      alt: image.title,
+      category: mapCategoryToDisplay(image.category),
+      description: image.description || ''
+    }));
+  };
+
+  // Fetch gallery images from API
+  useEffect(() => {
+    const fetchGalleryImages = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await api.gallery.getAll();
+        if (response.data) {
+          setGalleryImages(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching gallery images:', error);
+        setError('Failed to load gallery images. Please try again later.');
+        toast.error('Failed to load gallery images');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGalleryImages();
+  }, []);
+
+  // Get transformed images for display
+  const transformedImages = transformGalleryImages(galleryImages);
+
+  // Function to get images by category
+  const getImagesByCategory = (category: string): TransformedGalleryImage[] => {
+    return transformedImages.filter(img => img.category === category);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-[#8A5A44]" />
+            <p className="text-lg text-neutral-600">Loading gallery images...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg text-red-600 mb-4">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-[#C45D3A] hover:bg-[#A74B2F] text-white"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -205,10 +218,18 @@ const Gallery = () => {
             <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Attractions</h2>
           </div>
 
-          <HorizontalScrollGallery
-            images={galleryImages.filter(img => img.category === "Attractions")}
-            speed="medium"
-          />
+          {getImagesByCategory("Attractions").length > 0 ? (
+            <HorizontalScrollGallery
+              images={getImagesByCategory("Attractions")}
+              speed="medium"
+            />
+          ) : (
+            <div className="text-center py-12">
+              <Camera className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-600 mb-2">No Attractions Yet</h3>
+              <p className="text-gray-500">We're currently updating our attractions gallery. Check back soon for amazing local sights!</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -222,11 +243,19 @@ const Gallery = () => {
             <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Neighborhoods</h2>
           </div>
 
-          <HorizontalScrollGallery
-            images={galleryImages.filter(img => img.category === "Neighborhoods")}
-            speed="slow"
-            reverse={true}
-          />
+          {getImagesByCategory("Neighborhoods").length > 0 ? (
+            <HorizontalScrollGallery
+              images={getImagesByCategory("Neighborhoods")}
+              speed="slow"
+              reverse={true}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <MapPin className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-600 mb-2">No Neighborhoods Yet</h3>
+              <p className="text-gray-500">We're currently updating our neighborhoods gallery. Check back soon for local area highlights!</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -240,10 +269,18 @@ const Gallery = () => {
             <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Foods</h2>
           </div>
 
-          <HorizontalScrollGallery
-            images={galleryImages.filter(img => img.category === "Foods")}
-            speed="medium"
-          />
+          {getImagesByCategory("Foods").length > 0 ? (
+            <HorizontalScrollGallery
+              images={getImagesByCategory("Foods")}
+              speed="medium"
+            />
+          ) : (
+            <div className="text-center py-12">
+              <Utensils className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-600 mb-2">No Food Gallery Yet</h3>
+              <p className="text-gray-500">We're currently updating our food gallery. Check back soon for delicious culinary experiences!</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -257,11 +294,19 @@ const Gallery = () => {
             <h2 className="text-2xl font-serif font-bold text-[#8A5A44]">Events</h2>
           </div>
 
-          <HorizontalScrollGallery
-            images={galleryImages.filter(img => img.category === "Events")}
-            speed="fast"
-            reverse={true}
-          />
+          {getImagesByCategory("Events").length > 0 ? (
+            <HorizontalScrollGallery
+              images={getImagesByCategory("Events")}
+              speed="fast"
+              reverse={true}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-600 mb-2">No Events Yet</h3>
+              <p className="text-gray-500">We're currently updating our events gallery. Check back soon for exciting upcoming events!</p>
+            </div>
+          )}
         </div>
       </section>
 

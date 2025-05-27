@@ -10,6 +10,7 @@ import ChatButtonWrapper from "@/components/ChatButtonWrapper";
 import Home from "./pages/Home";
 import Rooms from "./pages/Rooms";
 import Menu from "./pages/Menu";
+import AboutUs from "./pages/AboutUs";
 import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/menu" element={<Menu />} />
+            <Route path="/about-us" element={<AboutUs />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/contact" element={<Contact />} />
 
