@@ -3,24 +3,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a connection pool with hardcoded credentials
-// This ensures we're using the exact credentials provided
+// Create a connection pool for Render PostgreSQL database
 const pool = new Pool({
-  host: 'localhost',
-  user: 'postgres',
-  database: 'hotel',
-  password: '7878',
-  port: 5432,
+  connectionString: process.env.DATABASE_URL || 'postgresql://db_oj3k_user:VqXsUAWlPtmDoLTWL4IpX7k4rZdr3cgr@dpg-d0qaen3uibrs73eep700-a.oregon-postgres.render.com/db_oj3k',
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Test the connection
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
-    console.error('Error connecting to PostgreSQL database:', err);
-    console.error(`Connection details: host=${process.env.PGHOST}, database=${process.env.PGDATABASE}, user=${process.env.PGUSER}, port=${process.env.PGPORT}`);
+    console.error('Error connecting to Render PostgreSQL database:', err);
+    console.error('Please check your DATABASE_URL environment variable or connection string');
   } else {
-    console.log('Connected to PostgreSQL database at:', res.rows[0].now);
-    console.log(`Successfully connected to database: ${process.env.PGDATABASE} on ${process.env.PGHOST}:${process.env.PGPORT}`);
+    console.log('✅ Connected to Render PostgreSQL database at:', res.rows[0].now);
+    console.log('🎯 Database: Macchiato Suites on Render');
   }
 });
 
