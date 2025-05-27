@@ -21,3 +21,21 @@ CREATE TRIGGER update_users_updated_at
 -- Create indexes for better performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+
+-- Insert default admin user
+-- Email: project@gmail.com
+-- Password: project (hashed using bcrypt)
+-- Note: This is a default admin account for initial setup. Change credentials in production.
+INSERT INTO users (
+  email,
+  password,
+  first_name,
+  last_name,
+  role
+) VALUES (
+  'project@gmail.com',
+  '$2b$10$koInpOjeLCMl6gDwhEBmM.cVTI4yAHt7fZvEwbC2ONbydyFhsflWy', -- bcrypt hash for 'project'
+  'Admin',
+  'User',
+  'admin'
+) ON CONFLICT (email) DO NOTHING;

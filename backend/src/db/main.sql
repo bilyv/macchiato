@@ -201,3 +201,25 @@ CREATE INDEX idx_menu_items_created_at ON menu_items(created_at);
 -- Menu images table indexes
 CREATE INDEX idx_menu_images_category ON menu_images(category);
 CREATE INDEX idx_menu_images_created_at ON menu_images(created_at);
+
+-- =============================================================================
+-- DEFAULT DATA
+-- =============================================================================
+
+-- Insert default admin user
+-- Email: project@gmail.com
+-- Password: project (hashed using bcrypt)
+-- Note: This is a default admin account for initial setup. Change credentials in production.
+INSERT INTO users (
+  email,
+  password,
+  first_name,
+  last_name,
+  role
+) VALUES (
+  'project@gmail.com',
+  '$2b$10$koInpOjeLCMl6gDwhEBmM.cVTI4yAHt7fZvEwbC2ONbydyFhsflWy', -- bcrypt hash for 'project'
+  'Admin',
+  'User',
+  'admin'
+) ON CONFLICT (email) DO NOTHING;
