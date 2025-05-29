@@ -15,6 +15,14 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  plugins: [
+    react(),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -28,12 +36,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  plugins: [
-    react(),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
+  base: '/',
 }));

@@ -3,16 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a connection pool using environment variables or fallback to local
+// Create a connection pool with hardcoded credentials
+// This ensures we're using the exact credentials provided
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
-  // Fallback to local configuration if no connection string is provided
-  host: process.env.DATABASE_URL ? undefined : (process.env.PGHOST || 'localhost'),
-  user: process.env.DATABASE_URL ? undefined : (process.env.PGUSER || 'postgres'),
-  database: process.env.DATABASE_URL ? undefined : (process.env.PGDATABASE || 'hotel'),
-  password: process.env.DATABASE_URL ? undefined : (process.env.PGPASSWORD || '7878'),
-  port: process.env.DATABASE_URL ? undefined : parseInt(process.env.PGPORT || '5432'),
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  host: 'localhost',
+  user: 'postgres',
+  database: 'hotel',
+  password: '7878',
+  port: 5432,
 });
 
 // Test the connection
