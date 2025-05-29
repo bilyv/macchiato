@@ -3,22 +3,26 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a connection pool for Render PostgreSQL database
+// Create a connection pool using environment variables or fallback to local
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://db_oj3k_user:VqXsUAWlPtmDoLTWL4IpX7k4rZdr3cgr@dpg-d0qaen3uibrs73eep700-a.oregon-postgres.render.com/db_oj3k',
-  ssl: {
-    rejectUnauthorized: false
-  }
+  connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
+  // Fallback to local configuration if no connection string is provided
+  host: process.env.DATABASE_URL ? undefined : (process.env.PGHOST || 'localhost'),
+  user: process.env.DATABASE_URL ? undefined : (process.env.PGUSER || 'postgres'),
+  database: process.env.DATABASE_URL ? undefined : (process.env.PGDATABASE || 'hotel'),
+  password: process.env.DATABASE_URL ? undefined : (process.env.PGPASSWORD || '7878'),
+  port: process.env.DATABASE_URL ? undefined : parseInt(process.env.PGPORT || '5432'),
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
 // Test the connection
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
-    console.error('Error connecting to Render PostgreSQL database:', err);
-    console.error('Please check your DATABASE_URL environment variable or connection string');
+    console.error('Error connecting to PostgreSQL database:', err);
+    console.error(`Connection details: host=${process.env.PGHOST}, database=${process.env.PGDATABASE}, user=${process.env.PGUSER}, port=${process.env.PGPORT}`);
   } else {
-    console.log('✅ Connected to Render PostgreSQL database at:', res.rows[0].now);
-    console.log('🎯 Database: Macchiato Suites on Render');
+    console.log('Connected to PostgreSQL database at:', res.rows[0].now);
+    console.log(`Successfully connected to database: ${process.env.PGDATABASE} on ${process.env.PGHOST}:${process.env.PGPORT}`);
   }
 });
 
