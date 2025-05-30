@@ -15,6 +15,10 @@ The `vercel.json` file tells Vercel to serve `index.html` for all routes:
 
 ```json
 {
+  "buildCommand": "bun run build",
+  "outputDirectory": "dist",
+  "installCommand": "bun install",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -42,6 +46,12 @@ The `vercel.json` file tells Vercel to serve `index.html` for all routes:
   ]
 }
 ```
+
+**Key additions for fixing the "No Output Directory" error:**
+- `"buildCommand": "bun run build"` - Tells Vercel how to build the project
+- `"outputDirectory": "dist"` - Specifies where the build output is located
+- `"installCommand": "bun install"` - Tells Vercel to use bun instead of npm
+- `"framework": "vite"` - Helps Vercel optimize for Vite projects
 
 #### 2. _redirects File (Backup)
 We've also added a `public/_redirects` file as a fallback:
