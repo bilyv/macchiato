@@ -6,9 +6,7 @@ export interface ApiOptions {
   headers?: Record<string, string>;
 }
 
-// Get API base URL from environment variables
-// In development, use the proxy. In production, use the backend Vercel URL
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+export const API_BASE_URL = '/api';
 
 // Get the auth token from localStorage
 export const getToken = (): string | null => {

@@ -1,6 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '@/lib/api/core';
 
 interface User {
   id: number;
@@ -38,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Store user in state and localStorage
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
-
+      
       // Redirect based on role
       if (userData.role === 'admin') {
         navigate('/admin/dashboard');
