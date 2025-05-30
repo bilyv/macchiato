@@ -6,7 +6,11 @@ import cloudinary, { getPublicIdFromUrl } from '../config/cloudinary.js';
 
 // Define Request type with file property for multer
 interface MulterRequest extends Request {
-  file?: Express.Multer.File;
+  file?: {
+    path: string;
+    filename: string;
+    [key: string]: any;
+  };
 }
 
 // Validation schema for gallery image

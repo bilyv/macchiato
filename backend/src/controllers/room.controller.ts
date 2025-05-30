@@ -6,7 +6,11 @@ import cloudinary, { getPublicIdFromUrl } from '../config/cloudinary.js';
 
 // Define Request type with file property for multer
 interface MulterRequest extends Request {
-  file?: Express.Multer.File;
+  file?: {
+    path: string;
+    filename: string;
+    [key: string]: any;
+  };
 }
 
 // Validation schemas
@@ -188,7 +192,7 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
       // Handle specific database errors
       if (error instanceof Error) {
         if (error.message.includes('duplicate key value violates unique constraint "rooms_room_number_key"')) {
-          next(new AppError(`Room number already exists. Please choose a different room number.`, 409));
+          next(new AppError(`Room number ${roomData.room_number} already exists. Please choose a different room number.`, 409));
         } else {
           next(new AppError(`Error creating room: ${error.message}`, 500));
         }
