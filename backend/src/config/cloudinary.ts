@@ -5,12 +5,32 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Configure Cloudinary
+// Configure Cloudinary with validation
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'dji23iymw';
+const apiKey = process.env.CLOUDINARY_API_KEY || '153258216349693';
+const apiSecret = process.env.CLOUDINARY_API_SECRET || '8NOP8q7Rve2FjOomgk8j84sXFCk';
+
+// Validate that we don't have placeholder values
+if (apiKey === 'your_api_key' || apiSecret === 'your_api_secret') {
+  console.warn('⚠️  Cloudinary is using placeholder credentials. Image uploads may fail.');
+  console.warn('   Please update CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in your .env file');
+}
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dji23iymw',
-  api_key: process.env.CLOUDINARY_API_KEY || '153258216349693',
-  api_secret: process.env.CLOUDINARY_API_SECRET || '8NOP8q7Rve2FjOomgk8j84sXFCk'
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret
 });
+
+// Test Cloudinary connection
+cloudinary.api.ping()
+  .then(() => {
+    console.log('✅ Cloudinary connection successful');
+  })
+  .catch((error) => {
+    console.warn('⚠️  Cloudinary connection failed:', error.message);
+    console.warn('   Image uploads will not work until Cloudinary is properly configured');
+  });
 
 // Define CloudinaryStorage params type
 export interface CloudinaryStorageParams {

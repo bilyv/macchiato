@@ -9,7 +9,11 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "deploy-schema": "bun scripts/deploy-schema.ts",
+    "db:deploy": "bun scripts/deploy-schema.ts",
+    "test-supabase": "bun scripts/test-supabase.ts",
+    "verify-supabase": "bun scripts/verify-supabase.ts"
   },
   "keywords": [
     "postgres",
@@ -21,6 +25,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.6.1",
     "cors": "^2.8.5",
