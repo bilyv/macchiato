@@ -13,6 +13,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test-db": "node test-db-connection.js",
+    "migrate": "npm run build && node dist/scripts/apply-migrations.js",
+    "deploy-schema": "npm run build && node dist/scripts/apply-migrations.js",
     "postinstall": "npm run build"
   },
   "keywords": [

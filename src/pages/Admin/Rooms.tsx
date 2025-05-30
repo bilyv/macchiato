@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, BedDouble, Loader2, X, Copy } from 'lucide-react';
+import { Pencil, Trash2, Plus, BedDouble, Loader2, X, Copy, Search } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import {
   Dialog,
@@ -81,6 +81,12 @@ const AdminRooms = () => {
     is_available: true,
   });
 
+  // New form state for room lookup
+  const [roomLookupNumber, setRoomLookupNumber] = useState<number>(0);
+  const [isLookingUpRoom, setIsLookingUpRoom] = useState(false);
+  const [roomFound, setRoomFound] = useState<Room | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchRooms();
     fetchClassifiedRooms();
@@ -134,21 +140,7 @@ const AdminRooms = () => {
       toast.success('Room created successfully');
 
       // Reset form
-      setNewRoom({
-        room_number: 0,
-        description: '',
-        price_per_night: 0,
-        capacity: 1,
-        room_type: '',
-        amenities: [],
-        display_category: '',
-        is_available: true,
-      });
-      setSelectedImage(null);
-      setImagePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      handleDialogClose();
 
       // Refresh room lists
       fetchRooms();
@@ -441,6 +433,91 @@ const AdminRooms = () => {
     return Math.max(0, toRoom - fromRoom + 1);
   };
 
+  // Handle room lookup by room number
+  const handleRoomLookup = async () => {
+    if (!roomLookupNumber || roomLookupNumber <= 0) {
+      setLookupError('Please enter a valid room number');
+      return;
+    }
+
+    setIsLookingUpRoom(true);
+    setLookupError(null);
+    setRoomFound(null);
+
+    try {
+      const response = await api.rooms.getByRoomNumber(roomLookupNumber);
+      const room = response.data;
+
+      // Set the found room data
+      setRoomFound(room);
+
+      // Pre-fill the form with room details
+      setNewRoom({
+        room_number: room.room_number,
+        description: room.description || '',
+        price_per_night: room.price_per_night,
+        capacity: room.capacity,
+        room_type: room.room_type,
+        amenities: room.amenities || [],
+        display_category: room.display_category || '',
+        is_available: true, // Default to available for new site room
+      });
+
+      // Clear any existing image preview since we're starting fresh
+      setSelectedImage(null);
+      setImagePreview(room.image_url || null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      toast.success(`Room ${room.room_number} details loaded successfully`);
+    } catch (error) {
+      console.error('Error looking up room:', error);
+      setLookupError(`Room ${roomLookupNumber} not found. You can create a new room with this number.`);
+
+      // Reset form to allow creating new room with this number
+      setNewRoom({
+        room_number: roomLookupNumber,
+        description: '',
+        price_per_night: 0,
+        capacity: 1,
+        room_type: '',
+        amenities: [],
+        display_category: '',
+        is_available: true,
+      });
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } finally {
+      setIsLookingUpRoom(false);
+    }
+  };
+
+  // Reset form when dialog closes
+  const handleDialogClose = () => {
+    setRoomLookupNumber(0);
+    setRoomFound(null);
+    setLookupError(null);
+    setNewRoom({
+      room_number: 0,
+      description: '',
+      price_per_night: 0,
+      capacity: 1,
+      room_type: '',
+      amenities: [],
+      display_category: '',
+      is_available: true,
+    });
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -479,191 +556,244 @@ const AdminRooms = () => {
                         Manage rooms that will be displayed on your website
                       </CardDescription>
                     </div>
-                    <Dialog>
+                    <Dialog onOpenChange={(open) => !open && handleDialogClose()}>
                       <DialogTrigger asChild>
                         <Button>
                           <Plus className="h-4 w-4 mr-2" />
                           Add to Site
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[450px]">
+                      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Add New Room to Site</DialogTitle>
                           <DialogDescription>
-                            Create a new room to display on your website.
+                            Enter a room number to load existing details or create a new room. The system will check if the room exists and pre-fill the form with room details like price, capacity, and room type.
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="grid gap-3 py-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="grid gap-1.5">
-                              <Label htmlFor="room_number">Room Number</Label>
-                              <Input
-                                id="room_number"
-                                type="number"
-                                value={newRoom.room_number || ''}
-                                onChange={(e) => setNewRoom({...newRoom, room_number: parseInt(e.target.value) || 0})}
-                                placeholder="101"
-                                className="h-8"
-                              />
+                        <div className="grid gap-4 py-3">
+                          {/* Room Lookup Section */}
+                          <div className="space-y-3">
+                            <div className="grid gap-2">
+                              <Label htmlFor="lookup_room_number">Room Number</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  id="lookup_room_number"
+                                  type="number"
+                                  value={roomLookupNumber || ''}
+                                  onChange={(e) => setRoomLookupNumber(parseInt(e.target.value) || 0)}
+                                  placeholder="Enter room number (e.g., 101)"
+                                  className="flex-1"
+                                />
+                                <Button
+                                  type="button"
+                                  onClick={handleRoomLookup}
+                                  disabled={isLookingUpRoom || !roomLookupNumber}
+                                  className="px-4"
+                                >
+                                  {isLookingUpRoom ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                      Looking...
+                                    </>
+                                  ) : (
+                                    'Input Room'
+                                  )}
+                                </Button>
+                              </div>
                             </div>
-                            <div className="grid gap-1.5">
-                              <Label htmlFor="price">Price Per Night ($)</Label>
-                              <Input
-                                id="price"
-                                type="number"
-                                value={newRoom.price_per_night || ''}
-                                onChange={(e) => setNewRoom({...newRoom, price_per_night: parseFloat(e.target.value) || 0})}
-                                placeholder="299.99"
-                                className="h-8"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid gap-1.5">
-                            <Label htmlFor="display_category">Display Category</Label>
-                            <select
-                              id="display_category"
-                              value={newRoom.display_category || ''}
-                              onChange={(e) => setNewRoom({...newRoom, display_category: e.target.value})}
-                              className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <option value="">Select a category (optional)</option>
-                              <option value="Featured Rooms">Featured Rooms</option>
-                              <option value="Our Elegant Suites">Our Elegant Suites</option>
-                              <option value="Premium Rooms">Premium Rooms</option>
-                              <option value="Family Rooms">Family Rooms</option>
-                              <option value="Budget Friendly">Budget Friendly</option>
-                            </select>
-                          </div>
-                          <div className="grid gap-1.5">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                              id="description"
-                              value={newRoom.description}
-                              onChange={(e) => setNewRoom({...newRoom, description: e.target.value})}
-                              placeholder="Spacious room with a king-size bed and city views."
-                              rows={2}
-                              className="text-sm"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="grid gap-1.5">
-                              <Label htmlFor="capacity">Capacity</Label>
-                              <Input
-                                id="capacity"
-                                type="number"
-                                value={newRoom.capacity || ''}
-                                onChange={(e) => setNewRoom({...newRoom, capacity: parseInt(e.target.value) || 0})}
-                                placeholder="2"
-                                className="h-8"
-                              />
-                            </div>
-                            <div className="grid gap-1.5">
-                              <Label htmlFor="room_type">Room Type</Label>
-                              <Input
-                                id="room_type"
-                                value={newRoom.room_type}
-                                onChange={(e) => setNewRoom({...newRoom, room_type: e.target.value})}
-                                placeholder="Standard Room"
-                                className="h-8"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid gap-1.5">
-                            <Label htmlFor="amenities">Amenities</Label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                id="amenities"
-                                value={currentAmenity}
-                                onChange={(e) => setCurrentAmenity(e.target.value)}
-                                placeholder="e.g., WiFi, Air Conditioning"
-                                className="flex-1 h-8 text-sm"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleAddAmenity();
-                                  }
-                                }}
-                              />
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={handleAddAmenity}
-                                className="h-8"
-                              >
-                                <Plus className="h-3 w-3" />
-                                Add
-                              </Button>
-                            </div>
-                            {newRoom.amenities.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {newRoom.amenities.map((amenity, index) => (
-                                  <Badge
-                                    key={index}
-                                    variant="secondary"
-                                    className="flex items-center gap-1 px-1.5 py-0.5 text-xs"
-                                  >
-                                    {amenity}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveAmenity(amenity)}
-                                      className="text-muted-foreground hover:text-foreground transition-colors"
-                                    >
-                                      <X className="h-2.5 w-2.5" />
-                                    </button>
-                                  </Badge>
-                                ))}
+
+                            {/* Error or Success Message */}
+                            {lookupError && (
+                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <p className="text-sm text-yellow-800">{lookupError}</p>
+                              </div>
+                            )}
+
+                            {roomFound && (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <p className="text-sm text-green-800 font-medium">
+                                  ✓ Room {roomFound.room_number} found! Details loaded below.
+                                </p>
+                                <p className="text-xs text-green-700 mt-1">
+                                  {roomFound.room_type} • ${roomFound.price_per_night}/night • Capacity: {roomFound.capacity}
+                                </p>
                               </div>
                             )}
                           </div>
 
-                          <div className="grid gap-1.5">
-                            <Label htmlFor="image">Room Image</Label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                id="image"
-                                type="file"
-                                ref={fileInputRef}
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="flex-1 h-8 text-sm"
-                              />
-                              {imagePreview && (
-                                <div className="w-12 h-12 relative overflow-hidden rounded-md">
-                                  <img
-                                    src={imagePreview}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover"
-                                  />
+                          {/* Room Details Form - Only show if room number is set */}
+                          {newRoom.room_number > 0 && (
+                            <>
+                              <div className="border-t pt-4">
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">Room Details</h4>
+                                <div className="grid gap-3">
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid gap-1.5">
+                                      <Label htmlFor="price">Price Per Night ($)</Label>
+                                      <Input
+                                        id="price"
+                                        type="number"
+                                        step="0.01"
+                                        value={newRoom.price_per_night || ''}
+                                        onChange={(e) => setNewRoom({...newRoom, price_per_night: parseFloat(e.target.value) || 0})}
+                                        placeholder="299.99"
+                                        className="h-8"
+                                      />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                      <Label htmlFor="capacity">Capacity</Label>
+                                      <Input
+                                        id="capacity"
+                                        type="number"
+                                        value={newRoom.capacity || ''}
+                                        onChange={(e) => setNewRoom({...newRoom, capacity: parseInt(e.target.value) || 0})}
+                                        placeholder="2"
+                                        className="h-8"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="grid gap-1.5">
+                                    <Label htmlFor="room_type">Room Type</Label>
+                                    <Input
+                                      id="room_type"
+                                      value={newRoom.room_type}
+                                      onChange={(e) => setNewRoom({...newRoom, room_type: e.target.value})}
+                                      placeholder="Standard Room, Deluxe Suite, etc."
+                                      className="h-8"
+                                    />
+                                  </div>
+                                  <div className="grid gap-1.5">
+                                    <Label htmlFor="display_category">Display Category</Label>
+                                    <select
+                                      id="display_category"
+                                      value={newRoom.display_category || ''}
+                                      onChange={(e) => setNewRoom({...newRoom, display_category: e.target.value})}
+                                      className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      <option value="">Select a category (optional)</option>
+                                      <option value="Featured Rooms">Featured Rooms</option>
+                                      <option value="Our Elegant Suites">Our Elegant Suites</option>
+                                      <option value="Premium Rooms">Premium Rooms</option>
+                                      <option value="Family Rooms">Family Rooms</option>
+                                      <option value="Budget Friendly">Budget Friendly</option>
+                                    </select>
+                                  </div>
+                                  <div className="grid gap-1.5">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                      id="description"
+                                      value={newRoom.description}
+                                      onChange={(e) => setNewRoom({...newRoom, description: e.target.value})}
+                                      placeholder="Spacious room with a king-size bed and city views."
+                                      rows={3}
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                  <div className="grid gap-1.5">
+                                    <Label htmlFor="amenities">Amenities</Label>
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        id="amenities"
+                                        value={currentAmenity}
+                                        onChange={(e) => setCurrentAmenity(e.target.value)}
+                                        placeholder="e.g., WiFi, Air Conditioning, Mini Bar"
+                                        className="flex-1 h-8 text-sm"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddAmenity();
+                                          }
+                                        }}
+                                      />
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={handleAddAmenity}
+                                        className="h-8"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        Add
+                                      </Button>
+                                    </div>
+                                    {newRoom.amenities.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {newRoom.amenities.map((amenity, index) => (
+                                          <Badge
+                                            key={index}
+                                            variant="secondary"
+                                            className="flex items-center gap-1 px-1.5 py-0.5 text-xs"
+                                          >
+                                            {amenity}
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveAmenity(amenity)}
+                                              className="text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                              <X className="h-2.5 w-2.5" />
+                                            </button>
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="grid gap-1.5">
+                                    <Label htmlFor="image">Room Image</Label>
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        id="image"
+                                        type="file"
+                                        ref={fileInputRef}
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="flex-1 h-8 text-sm"
+                                      />
+                                      {imagePreview && (
+                                        <div className="w-16 h-16 relative overflow-hidden rounded-md border">
+                                          <img
+                                            src={imagePreview}
+                                            alt="Preview"
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      Upload a high-quality image of the room (max 5MB)
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Switch
+                                      id="available"
+                                      checked={newRoom.is_available}
+                                      onCheckedChange={(checked) => setNewRoom({...newRoom, is_available: checked})}
+                                    />
+                                    <Label htmlFor="available" className="text-sm">Available for booking</Label>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="available"
-                              checked={newRoom.is_available}
-                              onCheckedChange={(checked) => setNewRoom({...newRoom, is_available: checked})}
-                            />
-                            <Label htmlFor="available" className="text-sm">Available for booking</Label>
-                          </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                         <DialogFooter>
                           <DialogClose asChild>
                             <Button variant="outline">Cancel</Button>
                           </DialogClose>
-                          <Button
-                            onClick={handleCreateRoom}
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Creating...
-                              </>
-                            ) : (
-                              'Add to Site'
-                            )}
-                          </Button>
+                          {newRoom.room_number > 0 && (
+                            <Button
+                              onClick={handleCreateRoom}
+                              disabled={isSubmitting || !newRoom.room_type || !newRoom.description || newRoom.price_per_night <= 0}
+                            >
+                              {isSubmitting ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Creating...
+                                </>
+                              ) : (
+                                'Add to Site'
+                              )}
+                            </Button>
+                          )}
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>

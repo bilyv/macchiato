@@ -32,6 +32,8 @@ export const roomsApi = {
 
   getById: (id: string) => apiRequest<{ status: string; data: Room }>(`/rooms/${id}`),
 
+  getByRoomNumber: (roomNumber: number) => apiRequest<{ status: string; data: Room }>(`/rooms/number/${roomNumber}`),
+
   create: (data: RoomFormData, image?: File) => {
     const formData = new FormData();
 
