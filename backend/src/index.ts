@@ -21,8 +21,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
+// Parse CORS origins from environment variable (comma-separated)
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:8080'];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: corsOrigins,
   credentials: true
 }));
 app.use(helmet());
