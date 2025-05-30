@@ -3,6 +3,7 @@ import multer from 'multer';
 import {
   getAllRooms,
   getRoomById,
+  getRoomByNumber,
   createRoom,
   updateRoom,
   deleteRoom
@@ -22,6 +23,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getAllRooms);
+router.get('/number/:roomNumber', getRoomByNumber);
 router.get('/:id', getRoomById);
 
 // Admin routes

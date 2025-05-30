@@ -3,26 +3,65 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a connection pool with hardcoded credentials
-// This ensures we're using the exact credentials provided
-const pool = new Pool({
-  host: 'localhost',
-  user: 'postgres',
-  database: 'hotel',
-  password: '7878',
-  port: 5432,
-});
-
-// Test the connection
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('Error connecting to PostgreSQL database:', err);
-    console.error(`Connection details: host=${process.env.PGHOST}, database=${process.env.PGDATABASE}, user=${process.env.PGUSER}, port=${process.env.PGPORT}`);
-  } else {
-    console.log('Connected to PostgreSQL database at:', res.rows[0].now);
-    console.log(`Successfully connected to database: ${process.env.PGDATABASE} on ${process.env.PGHOST}:${process.env.PGPORT}`);
+// Database configuration for Render deployment
+const getDatabaseConfig = () => {
+  // Check if we have a DATABASE_URL (Render provides this)
+  if (process.env.DATABASE_URL) {
+    console.log('Using DATABASE_URL for connection');
+    return {
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false // Required for Render PostgreSQL
+      }
+    };
   }
-});
+
+  // Fallback to individual environment variables for local development
+  console.log('Using individual environment variables for connection');
+  return {
+    host: process.env.PGHOST || 'localhost',
+    user: process.env.PGUSER || 'postgres',
+    database: process.env.PGDATABASE || 'macchiato_3xko',
+    password: process.env.PGPASSWORD,
+    port: parseInt(process.env.PGPORT || '5432'),
+    ssl: process.env.NODE_ENV === 'production' ? {
+      rejectUnauthorized: false
+    } : false
+  };
+};
+
+// Create a connection pool with dynamic configuration
+const pool = new Pool(getDatabaseConfig());
+
+// Enhanced connection testing with better error handling
+const testConnection = async () => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT NOW()');
+    client.release();
+
+    console.log('✅ Connected to PostgreSQL database at:', result.rows[0].now);
+    console.log(`✅ Database: ${process.env.PGDATABASE || 'macchiato_3xko'}`);
+    console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
+
+    return true;
+  } catch (err) {
+    console.error('❌ Error connecting to PostgreSQL database:', err);
+    console.error('Connection details:', {
+      host: process.env.PGHOST,
+      database: process.env.PGDATABASE,
+      user: process.env.PGUSER,
+      port: process.env.PGPORT,
+      hasPassword: !!process.env.PGPASSWORD,
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      nodeEnv: process.env.NODE_ENV
+    });
+    return false;
+  }
+};
+
+// Test connection on startup
+testConnection();
 
 // Helper function to get a client from the pool
 export const getClient = async (): Promise<PoolClient> => {

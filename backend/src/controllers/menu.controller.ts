@@ -6,11 +6,7 @@ import cloudinary, { getPublicIdFromUrl } from '../config/cloudinary.js';
 
 // Define Request type with file property for multer
 interface MulterRequest extends Request {
-  file?: {
-    path: string;
-    filename: string;
-    [key: string]: any;
-  };
+  file?: Express.Multer.File;
 }
 
 // Validation schemas
@@ -50,7 +46,7 @@ export const getAllMenuItems = async (req: Request, res: Response, next: NextFun
     const result = await query(queryText, queryParams);
 
     // Convert price and preparation_time to numbers for proper frontend handling
-    const processedRows = result.rows.map(row => ({
+    const processedRows = result.rows.map((row: any) => ({
       ...row,
       price: parseFloat(row.price) || 0,
       preparation_time: parseInt(row.preparation_time) || 0

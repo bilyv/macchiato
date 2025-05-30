@@ -6,11 +6,7 @@ import cloudinary, { getPublicIdFromUrl } from '../config/cloudinary.js';
 
 // Define Request type with file property for multer
 interface MulterRequest extends Request {
-  file?: {
-    path: string;
-    filename: string;
-    [key: string]: any;
-  };
+  file?: Express.Multer.File;
 }
 
 // Validation schemas
@@ -59,6 +55,38 @@ export const getRoomById = async (req: Request, res: Response, next: NextFunctio
     const result = await query(
       'SELECT * FROM rooms WHERE id = $1',
       [id]
+    );
+
+    if (result.rowCount === 0) {
+      throw new AppError('Room not found', 404);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error fetching room', 500));
+    }
+  }
+};
+
+// Get room by room number
+export const getRoomByNumber = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { roomNumber } = req.params;
+    const roomNum = parseInt(roomNumber);
+
+    if (isNaN(roomNum) || roomNum <= 0) {
+      throw new AppError('Invalid room number', 400);
+    }
+
+    const result = await query(
+      'SELECT * FROM rooms WHERE room_number = $1',
+      [roomNum]
     );
 
     if (result.rowCount === 0) {
@@ -160,7 +188,7 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
       // Handle specific database errors
       if (error instanceof Error) {
         if (error.message.includes('duplicate key value violates unique constraint "rooms_room_number_key"')) {
-          next(new AppError(`Room number ${roomData.room_number} already exists. Please choose a different room number.`, 409));
+          next(new AppError(`Room number already exists. Please choose a different room number.`, 409));
         } else {
           next(new AppError(`Error creating room: ${error.message}`, 500));
         }
