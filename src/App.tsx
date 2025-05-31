@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ChatButtonWrapper from "@/components/ChatButtonWrapper";
+import { ApiDebugInfo } from "@/components/ApiDebugInfo";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatButtonWrapper />
+          <ApiDebugInfo />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
