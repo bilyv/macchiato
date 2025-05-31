@@ -7,7 +7,10 @@ export interface ApiOptions {
 }
 
 // Use environment variable for backend URL in production, fallback to proxy in development
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '/api';
+// When using full backend URL, append /api path; when using proxy, /api is already the path
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL
+  ? `${import.meta.env.VITE_BACKEND_URL}/api`
+  : '/api';
 
 // Debug logging for API configuration
 console.log('🔧 API Configuration:', {
