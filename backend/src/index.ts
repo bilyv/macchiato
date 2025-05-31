@@ -31,6 +31,26 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root route - API information
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    name: 'Macchiato Suite Dreams API',
+    version: '1.0.0',
+    status: 'running',
+    message: 'Welcome to Macchiato Suite Dreams API',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      contact: '/api/contact',
+      rooms: '/api/rooms',
+      gallery: '/api/gallery',
+      menu: '/api/menu',
+      notifications: '/api/notification-bars'
+    },
+    documentation: 'API endpoints are available under /api/*'
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/contact', contactRoutes);
@@ -43,6 +63,24 @@ app.use('/api/notification-bars', notificationBarPublicRoutes);
 // Health check endpoint
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
+// Catch-all route for undefined endpoints
+app.use('*', (_req, res) => {
+  res.status(404).json({
+    error: 'Endpoint not found',
+    message: 'The requested endpoint does not exist',
+    availableEndpoints: {
+      root: '/',
+      health: '/health',
+      auth: '/api/auth',
+      contact: '/api/contact',
+      rooms: '/api/rooms',
+      gallery: '/api/gallery',
+      menu: '/api/menu',
+      notifications: '/api/notification-bars'
+    }
+  });
 });
 
 // Error handling middleware
