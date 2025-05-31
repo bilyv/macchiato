@@ -12,16 +12,6 @@ export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL
   ? `${import.meta.env.VITE_BACKEND_URL}/api`
   : '/api';
 
-// Debug logging for API configuration
-console.log('🔧 API Configuration:', {
-  VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
-  API_BASE_URL,
-  mode: import.meta.env.MODE,
-  prod: import.meta.env.PROD,
-  dev: import.meta.env.DEV,
-  allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
-});
-
 // Additional warning if using proxy in production
 if (import.meta.env.PROD && API_BASE_URL === '/api') {
   console.warn('⚠️ WARNING: Using proxy URL in production! Set VITE_BACKEND_URL environment variable.');

@@ -46,11 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log(`🔐 Login response status: ${response.status} ${response.statusText}`);
-
       if (!response.ok) {
         const responseText = await response.text();
-        console.log(`🔐 Login error response:`, responseText);
 
         let errorMessage = 'Login failed';
         if (responseText) {
@@ -65,8 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const responseText = await response.text();
-      console.log(`🔐 Login success response:`, responseText);
-
       const data = JSON.parse(responseText);
       const userData = data.data;
 
