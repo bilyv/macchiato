@@ -18,7 +18,8 @@ dotenv.config();
 
 // Create Express app
 const app = express();
-const port = process.env.PORT || 3000;
+const port = parseInt(process.env.PORT || '3000', 10); // Ensure port is a number
+const host = process.env.HOST || '0.0.0.0'; // Bind to 0.0.0.0 for external access (required by Render)
 
 // Middleware
 app.use(cors({
@@ -48,8 +49,38 @@ app.get('/health', (_req, res) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+const server = app.listen(port, host, () => {
+  console.log(`Server running on ${host}:${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:8080'}`);
+});
+
+// Handle server errors
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', error);
+    process.exit(1);
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+    process.exit(0);
+  });
 });
 
 export default app;
