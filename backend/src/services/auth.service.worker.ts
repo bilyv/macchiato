@@ -1,5 +1,4 @@
 import { createSupabaseClient } from '../config/supabase.js';
-import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
 // User type definition
@@ -25,15 +24,19 @@ export interface RegistrationData {
   lastName: string;
 }
 
-// Hash password
+// Hash password using Web Crypto API (Workers compatible)
 const hashPassword = async (password: string): Promise<string> => {
-  const saltRounds = 10;
-  return bcrypt.hash(password, saltRounds);
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// Verify password
+// Verify password using Web Crypto API (Workers compatible)
 const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> => {
-  return bcrypt.compare(password, hashedPassword);
+  const hashedInput = await hashPassword(password);
+  return hashedInput === hashedPassword;
 };
 
 // Login user

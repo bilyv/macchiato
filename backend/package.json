@@ -6,14 +6,26 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
+    "dev:worker": "wrangler dev",
     "build": "tsc",
+    "build:render": "tsc && npm run copy-assets",
+    "build:worker": "tsc && cp dist/worker.js dist/worker.js",
     "start": "node dist/index.js",
+    "start:render": "node dist/index.js",
+    "copy-assets": "echo 'No assets to copy'",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "deploy:render": "echo 'Deploy to Render via Git push'",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:render": "npm run build && npm run test",
     "deploy-schema": "bun scripts/deploy-schema.ts",
     "db:deploy": "bun scripts/deploy-schema.ts",
     "test-supabase": "bun scripts/test-supabase.ts",
-    "verify-supabase": "bun scripts/verify-supabase.ts"
+    "verify-supabase": "bun scripts/verify-supabase.ts",
+    "migrate": "npm run build && node dist/scripts/apply-migrations.js",
+    "test-db": "node test-db-connection.js"
   },
   "keywords": [
     "postgres",
@@ -25,6 +37,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@hono/node-server": "^1.14.3",
     "@supabase/supabase-js": "^2.49.8",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.6.1",
@@ -32,6 +45,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
+    "hono": "^4.7.10",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.2",
@@ -41,6 +55,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250529.0",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
@@ -54,6 +69,7 @@
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.3",
-    "vitest": "^1.4.0"
+    "vitest": "^1.4.0",
+    "wrangler": "^4.18.0"
   }
 }
