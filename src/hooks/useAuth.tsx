@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../lib/api/core';
 
 interface User {
   id: number;
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,18 +46,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log(`🔐 Login response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
+        const responseText = await response.text();
+        console.log(`🔐 Login error response:`, responseText);
+
+        let errorMessage = 'Login failed';
+        if (responseText) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            errorMessage = responseText || errorMessage;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      console.log(`🔐 Login success response:`, responseText);
+
+      const data = JSON.parse(responseText);
       const userData = data.data;
 
       // Store user in state and localStorage
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
-      
+
       // Redirect based on role
       if (userData.role === 'admin') {
         navigate('/admin/dashboard');

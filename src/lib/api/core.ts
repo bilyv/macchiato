@@ -72,21 +72,36 @@ export const apiRequest = async <T>(endpoint: string, options: ApiOptions = {}):
 
   try {
     const fullUrl = `${API_BASE_URL}${endpoint}`;
-    console.log(`🌐 API Request: ${config.method || 'GET'} ${fullUrl}`);
-
     const response = await fetch(fullUrl, config);
 
+    // Get response text first to handle empty responses
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `API request failed with status ${response.status}`);
+      let errorData: any = {};
+      if (responseText) {
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          console.warn('Response is not valid JSON:', responseText);
+          errorData = { message: responseText || `HTTP ${response.status}` };
+        }
+      }
+      throw new Error(errorData.message || `API request failed with status ${response.status}: ${response.statusText}`);
     }
 
-    // Handle 204 No Content responses
-    if (response.status === 204) {
+    // Handle 204 No Content responses or empty responses
+    if (response.status === 204 || !responseText) {
       return {} as T;
     }
 
-    return await response.json();
+    // Parse JSON response
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse JSON response:', responseText);
+      throw new Error('Invalid JSON response from server');
+    }
   } catch (error) {
     console.error('API request error:', error);
     throw error;
