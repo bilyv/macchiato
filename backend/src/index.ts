@@ -22,8 +22,24 @@ const port = parseInt(process.env.PORT || '3000', 10); // Ensure port is a numbe
 const host = process.env.HOST || '0.0.0.0'; // Bind to 0.0.0.0 for external access (required by Render)
 
 // Middleware
+// Configure CORS to allow multiple origins (local development and production)
+const allowedOrigins = [
+  'http://localhost:8080', // Local development
+  'https://macchiato-delta.vercel.app', // Vercel frontend
+  process.env.CORS_ORIGIN // Additional origin from environment variable
+].filter(Boolean); // Remove any undefined values
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(helmet());
@@ -90,7 +106,7 @@ app.use(errorHandler);
 const server = app.listen(port, host, () => {
   console.log(`Server running on ${host}:${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:8080'}`);
+  console.log(`Allowed CORS Origins: ${allowedOrigins.join(', ')}`);
 });
 
 // Handle server errors
