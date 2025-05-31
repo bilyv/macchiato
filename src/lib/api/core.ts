@@ -6,7 +6,23 @@ export interface ApiOptions {
   headers?: Record<string, string>;
 }
 
-export const API_BASE_URL = '/api';
+// Use environment variable for backend URL in production, fallback to proxy in development
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '/api';
+
+// Debug logging for API configuration
+console.log('🔧 API Configuration:', {
+  VITE_BACKEND_URL: import.meta.env.VITE_BACKEND_URL,
+  API_BASE_URL,
+  mode: import.meta.env.MODE,
+  prod: import.meta.env.PROD,
+  dev: import.meta.env.DEV,
+  allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
+});
+
+// Additional warning if using proxy in production
+if (import.meta.env.PROD && API_BASE_URL === '/api') {
+  console.warn('⚠️ WARNING: Using proxy URL in production! Set VITE_BACKEND_URL environment variable.');
+}
 
 // Get the auth token from localStorage
 export const getToken = (): string | null => {
@@ -52,7 +68,10 @@ export const apiRequest = async <T>(endpoint: string, options: ApiOptions = {}):
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log(`🌐 API Request: ${config.method || 'GET'} ${fullUrl}`);
+
+    const response = await fetch(fullUrl, config);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
