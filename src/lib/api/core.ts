@@ -17,8 +17,15 @@ if (import.meta.env.PROD && API_BASE_URL === '/api') {
   console.warn('⚠️ WARNING: Using proxy URL in production! Set VITE_BACKEND_URL environment variable.');
 }
 
-// Get the auth token from localStorage
+// Get the auth token from localStorage (supports both admin and worker tokens)
 export const getToken = (): string | null => {
+  // Check for worker token first
+  const workerToken = localStorage.getItem('worker_token');
+  if (workerToken) {
+    return workerToken;
+  }
+
+  // Fallback to admin user token
   const user = localStorage.getItem('user');
   if (!user) return null;
 

@@ -29,6 +29,9 @@ import AdminGuests from "./pages/Admin/Guests";
 import ExternalUserLogin from "./pages/ExternalUser/Login";
 import ExternalUserDashboard from "./pages/ExternalUser/Dashboard";
 
+// Worker Pages
+import WorkerLogin from "./pages/WorkerLogin";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -60,6 +63,10 @@ const App = () => (
             {/* External User Routes */}
             <Route path="/external-user/login" element={<ExternalUserLogin />} />
             <Route path="/external-user/dashboard" element={<ExternalUserDashboard />} />
+
+            {/* Worker Routes */}
+            <Route path="/worker/login" element={<WorkerLogin />} />
+            <Route path="/worker/dashboard" element={<ExternalUserDashboard />} />
 
             {/* Redirect /admin to /admin/dashboard */}
             <Route path="/admin" element={<AdminDashboard />} />

@@ -16,17 +16,18 @@ const createGuestSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email format'),
   phone: z.string().optional(),
-  address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
   dateOfBirth: z.string().optional(),
   identificationType: z.enum(['passport', 'driver_license', 'national_id', 'other']).optional(),
   identificationNumber: z.string().optional(),
-  emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().optional(),
   specialRequirements: z.string().optional(),
-  notes: z.string().optional(),
-  isVip: z.boolean().optional()
+  // Booking details for local guests
+  roomNumber: z.number().int().positive().optional(),
+  checkInDate: z.string().optional(),
+  checkOutDate: z.string().optional(),
+  numberOfGuests: z.number().int().positive().optional(),
+  totalPrice: z.number().positive().optional()
 });
 
 const updateGuestSchema = z.object({
@@ -34,17 +35,18 @@ const updateGuestSchema = z.object({
   lastName: z.string().min(1, 'Last name is required').optional(),
   email: z.string().email('Invalid email format').optional(),
   phone: z.string().optional(),
-  address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
   dateOfBirth: z.string().optional(),
   identificationType: z.enum(['passport', 'driver_license', 'national_id', 'other']).optional(),
   identificationNumber: z.string().optional(),
-  emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().optional(),
   specialRequirements: z.string().optional(),
-  notes: z.string().optional(),
-  isVip: z.boolean().optional()
+  // Booking details for local guests
+  roomNumber: z.number().int().positive().optional(),
+  checkInDate: z.string().optional(),
+  checkOutDate: z.string().optional(),
+  numberOfGuests: z.number().int().positive().optional(),
+  totalPrice: z.number().positive().optional()
 });
 
 /**

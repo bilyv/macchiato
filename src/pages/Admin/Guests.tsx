@@ -68,6 +68,7 @@ import {
 import { api } from '@/lib/api';
 import { ExternalUser, CreateExternalUserData, UpdateExternalUserData } from '@/lib/api/external-users';
 import { Guest, CreateGuestData, UpdateGuestData } from '@/lib/api/guests';
+import { Room } from '@/lib/api/rooms';
 import { toast } from '@/components/ui/sonner';
 
 const AdminGuests = () => {
@@ -78,6 +79,10 @@ const AdminGuests = () => {
   // Guests State
   const [guests, setGuests] = useState<Guest[]>([]);
   const [isLoadingGuests, setIsLoadingGuests] = useState(true);
+
+  // Rooms State for booking details
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
 
   // UI State
   const [activeTab, setActiveTab] = useState('external-users');
@@ -100,17 +105,18 @@ const AdminGuests = () => {
     lastName: '',
     email: '',
     phone: '',
-    address: '',
     city: '',
     country: '',
     dateOfBirth: '',
     identificationType: undefined,
     identificationNumber: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
     specialRequirements: '',
-    notes: '',
-    isVip: false
+    // Booking details for local guests
+    roomNumber: undefined,
+    checkInDate: '',
+    checkOutDate: '',
+    numberOfGuests: 1,
+    totalPrice: undefined
   });
 
   // Fetch external users
@@ -141,13 +147,70 @@ const AdminGuests = () => {
     }
   };
 
+  // Fetch rooms for booking details
+  const fetchRooms = async () => {
+    try {
+      setIsLoadingRooms(true);
+      const response = await api.rooms.getAll();
+      setRooms(response.data);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+      toast.error('Failed to fetch rooms');
+    } finally {
+      setIsLoadingRooms(false);
+    }
+  };
+
   useEffect(() => {
     fetchExternalUsers();
     fetchGuests();
+    fetchRooms();
   }, []);
+
+  // Calculate total price based on room and dates
+  const calculateTotalPrice = (roomNumber: number, checkInDate: string, checkOutDate: string) => {
+    if (!roomNumber || !checkInDate || !checkOutDate) return 0;
+
+    const room = rooms.find(r => r.room_number === roomNumber);
+    if (!room) return 0;
+
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const numberOfNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (numberOfNights <= 0) return 0;
+
+    return numberOfNights * room.price_per_night;
+  };
+
+  // Update total price when booking details change
+  useEffect(() => {
+    if (guestForm.roomNumber && guestForm.checkInDate && guestForm.checkOutDate) {
+      const totalPrice = calculateTotalPrice(guestForm.roomNumber, guestForm.checkInDate, guestForm.checkOutDate);
+      setGuestForm(prev => ({ ...prev, totalPrice }));
+    }
+  }, [guestForm.roomNumber, guestForm.checkInDate, guestForm.checkOutDate, rooms]);
 
   // Create external user
   const handleCreateExternalUser = async () => {
+    // Client-side validation
+    if (!externalUserForm.firstName.trim()) {
+      toast.error('First name is required');
+      return;
+    }
+    if (!externalUserForm.lastName.trim()) {
+      toast.error('Last name is required');
+      return;
+    }
+    if (!externalUserForm.email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!externalUserForm.password || externalUserForm.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
     try {
       await api.externalUsers.create(externalUserForm);
       toast.success('External user created successfully');
@@ -176,17 +239,18 @@ const AdminGuests = () => {
         lastName: '',
         email: '',
         phone: '',
-        address: '',
         city: '',
         country: '',
         dateOfBirth: '',
         identificationType: undefined,
         identificationNumber: '',
-        emergencyContactName: '',
-        emergencyContactPhone: '',
         specialRequirements: '',
-        notes: '',
-        isVip: false
+        // Booking details for local guests
+        roomNumber: undefined,
+        checkInDate: '',
+        checkOutDate: '',
+        numberOfGuests: 1,
+        totalPrice: undefined
       });
       fetchGuests();
     } catch (error: any) {
@@ -254,14 +318,7 @@ const AdminGuests = () => {
     );
   };
 
-  const getVipBadge = (isVip: boolean) => {
-    return isVip ? (
-      <Badge variant="default" className="bg-yellow-500 hover:bg-yellow-600">
-        <Shield className="h-3 w-3 mr-1" />
-        VIP
-      </Badge>
-    ) : null;
-  };
+
 
   return (
     <AdminLayout>
@@ -391,15 +448,31 @@ const AdminGuests = () => {
                             type="password"
                             value={externalUserForm.password}
                             onChange={(e) => setExternalUserForm(prev => ({ ...prev, password: e.target.value }))}
-                            placeholder="Enter password"
+                            placeholder="Enter password (minimum 6 characters)"
+                            className={externalUserForm.password.length > 0 && externalUserForm.password.length < 6 ? 'border-red-300 focus:border-red-500' : ''}
                           />
+                          {externalUserForm.password.length > 0 && externalUserForm.password.length < 6 && (
+                            <p className="text-sm text-red-600">Password must be at least 6 characters long</p>
+                          )}
+                          {externalUserForm.password.length >= 6 && (
+                            <p className="text-sm text-green-600">✓ Password meets requirements</p>
+                          )}
                         </div>
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsCreateExternalUserOpen(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleCreateExternalUser}>
+                        <Button
+                          onClick={handleCreateExternalUser}
+                          disabled={
+                            !externalUserForm.firstName.trim() ||
+                            !externalUserForm.lastName.trim() ||
+                            !externalUserForm.email.trim() ||
+                            !externalUserForm.password ||
+                            externalUserForm.password.length < 6
+                          }
+                        >
                           Create User
                         </Button>
                       </DialogFooter>
@@ -562,15 +635,7 @@ const AdminGuests = () => {
                             />
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="guestAddress">Address</Label>
-                          <Input
-                            id="guestAddress"
-                            value={guestForm.address}
-                            onChange={(e) => setGuestForm(prev => ({ ...prev, address: e.target.value }))}
-                            placeholder="Enter address"
-                          />
-                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="guestCity">City</Label>
@@ -628,26 +693,7 @@ const AdminGuests = () => {
                             placeholder="Enter ID number"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="emergencyName">Emergency Contact Name</Label>
-                            <Input
-                              id="emergencyName"
-                              value={guestForm.emergencyContactName}
-                              onChange={(e) => setGuestForm(prev => ({ ...prev, emergencyContactName: e.target.value }))}
-                              placeholder="Enter emergency contact name"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="emergencyPhone">Emergency Contact Phone</Label>
-                            <Input
-                              id="emergencyPhone"
-                              value={guestForm.emergencyContactPhone}
-                              onChange={(e) => setGuestForm(prev => ({ ...prev, emergencyContactPhone: e.target.value }))}
-                              placeholder="Enter emergency contact phone"
-                            />
-                          </div>
-                        </div>
+
                         <div className="space-y-2">
                           <Label htmlFor="specialRequirements">Special Requirements</Label>
                           <Textarea
@@ -658,24 +704,80 @@ const AdminGuests = () => {
                             rows={3}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="notes">Notes</Label>
-                          <Textarea
-                            id="notes"
-                            value={guestForm.notes}
-                            onChange={(e) => setGuestForm(prev => ({ ...prev, notes: e.target.value }))}
-                            placeholder="Enter any additional notes"
-                            rows={3}
-                          />
+
+                        {/* Booking Details Section */}
+                        <div className="border-t pt-4">
+                          <h3 className="text-lg font-medium mb-4">Booking Details (Optional)</h3>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="roomNumber">Room Number</Label>
+                                <Select
+                                  value={guestForm.roomNumber?.toString()}
+                                  onValueChange={(value) => setGuestForm(prev => ({ ...prev, roomNumber: value ? parseInt(value) : undefined }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select room" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {rooms.map((room) => (
+                                      <SelectItem key={room.id} value={room.room_number.toString()}>
+                                        Room {room.room_number} - {room.room_type} (${room.price_per_night}/night)
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="numberOfGuests">Number of Guests</Label>
+                                <Input
+                                  id="numberOfGuests"
+                                  type="number"
+                                  min="1"
+                                  value={guestForm.numberOfGuests}
+                                  onChange={(e) => setGuestForm(prev => ({ ...prev, numberOfGuests: parseInt(e.target.value) || 1 }))}
+                                  placeholder="Number of guests"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="checkInDate">Check-in Date</Label>
+                                <Input
+                                  id="checkInDate"
+                                  type="date"
+                                  value={guestForm.checkInDate}
+                                  onChange={(e) => setGuestForm(prev => ({ ...prev, checkInDate: e.target.value }))}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="checkOutDate">Check-out Date</Label>
+                                <Input
+                                  id="checkOutDate"
+                                  type="date"
+                                  value={guestForm.checkOutDate}
+                                  onChange={(e) => setGuestForm(prev => ({ ...prev, checkOutDate: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+                            {guestForm.totalPrice && guestForm.totalPrice > 0 && (
+                              <div className="bg-gray-50 p-4 rounded-lg">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-medium">Total Price:</span>
+                                  <span className="text-lg font-bold text-green-600">
+                                    ${guestForm.totalPrice.toFixed(2)}
+                                  </span>
+                                </div>
+                                {guestForm.roomNumber && guestForm.checkInDate && guestForm.checkOutDate && (
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {Math.ceil((new Date(guestForm.checkOutDate).getTime() - new Date(guestForm.checkInDate).getTime()) / (1000 * 60 * 60 * 24))} nights
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="isVip"
-                            checked={guestForm.isVip}
-                            onCheckedChange={(checked) => setGuestForm(prev => ({ ...prev, isVip: checked }))}
-                          />
-                          <Label htmlFor="isVip">VIP Guest</Label>
-                        </div>
+
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsCreateGuestOpen(false)}>
@@ -708,7 +810,7 @@ const AdminGuests = () => {
                           <TableHead>Name</TableHead>
                           <TableHead>Contact</TableHead>
                           <TableHead>Location</TableHead>
-                          <TableHead>Status</TableHead>
+                          <TableHead>Booking Details</TableHead>
                           <TableHead>Created By</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -717,12 +819,10 @@ const AdminGuests = () => {
                         {filteredGuests.map((guest) => (
                           <TableRow key={guest.id}>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div>
-                                  <div className="font-medium">{guest.first_name} {guest.last_name}</div>
-                                  {getVipBadge(guest.is_vip)}
-                                </div>
-                              </div>
+                              <div className="font-medium">{guest.first_name} {guest.last_name}</div>
+                              {guest.room_number && (
+                                <div className="text-sm text-gray-600">Room {guest.room_number}</div>
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="space-y-1">
@@ -751,7 +851,21 @@ const AdminGuests = () => {
                               )}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">Guest</Badge>
+                              {guest.check_in_date && guest.check_out_date ? (
+                                <div className="text-sm">
+                                  <div className="font-medium">
+                                    {new Date(guest.check_in_date).toLocaleDateString()} - {new Date(guest.check_out_date).toLocaleDateString()}
+                                  </div>
+                                  {guest.number_of_guests && (
+                                    <div className="text-gray-600">{guest.number_of_guests} guest{guest.number_of_guests > 1 ? 's' : ''}</div>
+                                  )}
+                                  {guest.total_price && (
+                                    <div className="text-green-600 font-medium">${guest.total_price}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-sm">No booking details</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="text-sm">

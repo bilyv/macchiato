@@ -7,17 +7,18 @@ export interface Guest {
   last_name: string;
   email: string;
   phone?: string;
-  address?: string;
   city?: string;
   country?: string;
   date_of_birth?: string;
   identification_type?: 'passport' | 'driver_license' | 'national_id' | 'other';
   identification_number?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
   special_requirements?: string;
-  notes?: string;
-  is_vip: boolean;
+  // Booking details for local guests
+  room_number?: number;
+  check_in_date?: string;
+  check_out_date?: string;
+  number_of_guests?: number;
+  total_price?: number;
   created_by_user_id?: string;
   created_by_external_user_id?: string;
   created_at: string;
@@ -31,17 +32,18 @@ export interface CreateGuestData {
   lastName: string;
   email: string;
   phone?: string;
-  address?: string;
   city?: string;
   country?: string;
   dateOfBirth?: string;
   identificationType?: 'passport' | 'driver_license' | 'national_id' | 'other';
   identificationNumber?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
   specialRequirements?: string;
-  notes?: string;
-  isVip?: boolean;
+  // Booking details for local guests
+  roomNumber?: number;
+  checkInDate?: string;
+  checkOutDate?: string;
+  numberOfGuests?: number;
+  totalPrice?: number;
 }
 
 export interface UpdateGuestData {
@@ -49,41 +51,42 @@ export interface UpdateGuestData {
   lastName?: string;
   email?: string;
   phone?: string;
-  address?: string;
   city?: string;
   country?: string;
   dateOfBirth?: string;
   identificationType?: 'passport' | 'driver_license' | 'national_id' | 'other';
   identificationNumber?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
   specialRequirements?: string;
-  notes?: string;
-  isVip?: boolean;
+  // Booking details for local guests
+  roomNumber?: number;
+  checkInDate?: string;
+  checkOutDate?: string;
+  numberOfGuests?: number;
+  totalPrice?: number;
 }
 
 export const guestsApi = {
   // Get guests (filtered based on user role)
   getAll: () => apiRequest<{ status: string; data: Guest[] }>('/guests'),
-  
+
   // Admin only - get all guests
   getAllAdmin: () => apiRequest<{ status: string; data: Guest[] }>('/guests/admin/all'),
-  
+
   getById: (id: string) => apiRequest<{ status: string; data: Guest }>(`/guests/${id}`),
-  
-  create: (data: CreateGuestData) => 
+
+  create: (data: CreateGuestData) =>
     apiRequest<{ status: string; data: Guest }>('/guests', {
       method: 'POST',
       body: data
     }),
-  
-  update: (id: string, data: UpdateGuestData) => 
+
+  update: (id: string, data: UpdateGuestData) =>
     apiRequest<{ status: string; data: Guest }>(`/guests/${id}`, {
       method: 'PUT',
       body: data
     }),
-  
-  delete: (id: string) => 
+
+  delete: (id: string) =>
     apiRequest<{ status: string; message: string }>(`/guests/${id}`, {
       method: 'DELETE'
     })

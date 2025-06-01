@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import NotificationBar from "./NotificationBar";
 import { useState, useEffect, useRef } from "react";
@@ -185,6 +185,40 @@ const Navbar = () => {
                 Contact
               </Link>
               <BookingFormDialog />
+
+              {/* Login Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hover:bg-[#F9F5F2] transition-colors"
+                  >
+                    <User className="h-4 w-4 mr-2 text-[#8A5A44]" />
+                    <span className="text-[#8A5A44]">Login</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[160px] p-2 bg-white/95 backdrop-blur-sm rounded-lg">
+                  <DropdownMenuItem asChild className="cursor-pointer rounded-md p-2">
+                    <Link
+                      to="/admin/login"
+                      className="text-sm font-medium transition-colors w-full text-neutral-800 hover:text-[#C45D3A] flex items-center"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Admin Login
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer rounded-md p-2">
+                    <Link
+                      to="/worker/login"
+                      className="text-sm font-medium transition-colors w-full text-neutral-800 hover:text-amber-600 flex items-center"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Worker Login
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Mobile Menu Button */}
@@ -258,6 +292,25 @@ const Navbar = () => {
                       <BookingFormDialog
                         buttonClassName="w-full h-8 bg-[#C45D3A] hover:bg-[#A74B2F] text-white text-sm"
                       />
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#E8C3A3]/30 my-1" />
+                    <DropdownMenuItem asChild className="cursor-pointer mobile-dropdown-item rounded-md p-1.5">
+                      <Link
+                        to="/admin/login"
+                        className="text-sm font-medium transition-colors w-full text-neutral-800 hover:text-[#C45D3A] flex items-center"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Admin Login
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer mobile-dropdown-item rounded-md p-1.5">
+                      <Link
+                        to="/worker/login"
+                        className="text-sm font-medium transition-colors w-full text-neutral-800 hover:text-amber-600 flex items-center"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Worker Login
+                      </Link>
                     </DropdownMenuItem>
                   </nav>
                 </DropdownMenuContent>

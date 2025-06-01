@@ -7,17 +7,18 @@ export interface Guest {
   last_name: string;
   email: string;
   phone?: string;
-  address?: string;
   city?: string;
   country?: string;
   date_of_birth?: string;
   identification_type?: string;
   identification_number?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
   special_requirements?: string;
-  notes?: string;
-  is_vip: boolean;
+  // Booking details for local guests
+  room_number?: number;
+  check_in_date?: string;
+  check_out_date?: string;
+  number_of_guests?: number;
+  total_price?: number;
   created_by_user_id?: string;
   created_by_external_user_id?: string;
   created_at: string;
@@ -31,17 +32,18 @@ export interface CreateGuestData {
   lastName: string;
   email: string;
   phone?: string;
-  address?: string;
   city?: string;
   country?: string;
   dateOfBirth?: string;
   identificationType?: string;
   identificationNumber?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
   specialRequirements?: string;
-  notes?: string;
-  isVip?: boolean;
+  // Booking details for local guests
+  roomNumber?: number;
+  checkInDate?: string;
+  checkOutDate?: string;
+  numberOfGuests?: number;
+  totalPrice?: number;
   createdByUserId?: string;
   createdByExternalUserId?: string;
 }
@@ -51,17 +53,18 @@ export interface UpdateGuestData {
   lastName?: string;
   email?: string;
   phone?: string;
-  address?: string;
   city?: string;
   country?: string;
   dateOfBirth?: string;
   identificationType?: string;
   identificationNumber?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
   specialRequirements?: string;
-  notes?: string;
-  isVip?: boolean;
+  // Booking details for local guests
+  roomNumber?: number;
+  checkInDate?: string;
+  checkOutDate?: string;
+  numberOfGuests?: number;
+  totalPrice?: number;
 }
 
 /**
@@ -173,10 +176,10 @@ export const createGuest = async (guestData: CreateGuestData): Promise<Guest> =>
     // Insert new guest
     const result = await query(`
       INSERT INTO guests (
-        first_name, last_name, email, phone, address, city, country,
+        first_name, last_name, email, phone, city, country,
         date_of_birth, identification_type, identification_number,
-        emergency_contact_name, emergency_contact_phone, special_requirements,
-        notes, is_vip, created_by_user_id, created_by_external_user_id
+        special_requirements, room_number, check_in_date, check_out_date,
+        number_of_guests, total_price, created_by_user_id, created_by_external_user_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *
     `, [
@@ -184,17 +187,17 @@ export const createGuest = async (guestData: CreateGuestData): Promise<Guest> =>
       guestData.lastName,
       guestData.email,
       guestData.phone || null,
-      guestData.address || null,
       guestData.city || null,
       guestData.country || null,
       guestData.dateOfBirth || null,
       guestData.identificationType || null,
       guestData.identificationNumber || null,
-      guestData.emergencyContactName || null,
-      guestData.emergencyContactPhone || null,
       guestData.specialRequirements || null,
-      guestData.notes || null,
-      guestData.isVip || false,
+      guestData.roomNumber || null,
+      guestData.checkInDate || null,
+      guestData.checkOutDate || null,
+      guestData.numberOfGuests || 1,
+      guestData.totalPrice || null,
       guestData.createdByUserId || null,
       guestData.createdByExternalUserId || null
     ]);
@@ -243,12 +246,6 @@ export const updateGuest = async (id: string, guestData: UpdateGuestData): Promi
       paramCount++;
     }
 
-    if (guestData.address !== undefined) {
-      updateFields.push(`address = $${paramCount}`);
-      values.push(guestData.address);
-      paramCount++;
-    }
-
     if (guestData.city !== undefined) {
       updateFields.push(`city = $${paramCount}`);
       values.push(guestData.city);
@@ -279,33 +276,40 @@ export const updateGuest = async (id: string, guestData: UpdateGuestData): Promi
       paramCount++;
     }
 
-    if (guestData.emergencyContactName !== undefined) {
-      updateFields.push(`emergency_contact_name = $${paramCount}`);
-      values.push(guestData.emergencyContactName);
-      paramCount++;
-    }
-
-    if (guestData.emergencyContactPhone !== undefined) {
-      updateFields.push(`emergency_contact_phone = $${paramCount}`);
-      values.push(guestData.emergencyContactPhone);
-      paramCount++;
-    }
-
     if (guestData.specialRequirements !== undefined) {
       updateFields.push(`special_requirements = $${paramCount}`);
       values.push(guestData.specialRequirements);
       paramCount++;
     }
 
-    if (guestData.notes !== undefined) {
-      updateFields.push(`notes = $${paramCount}`);
-      values.push(guestData.notes);
+    // Booking details fields
+    if (guestData.roomNumber !== undefined) {
+      updateFields.push(`room_number = $${paramCount}`);
+      values.push(guestData.roomNumber);
       paramCount++;
     }
 
-    if (guestData.isVip !== undefined) {
-      updateFields.push(`is_vip = $${paramCount}`);
-      values.push(guestData.isVip);
+    if (guestData.checkInDate !== undefined) {
+      updateFields.push(`check_in_date = $${paramCount}`);
+      values.push(guestData.checkInDate);
+      paramCount++;
+    }
+
+    if (guestData.checkOutDate !== undefined) {
+      updateFields.push(`check_out_date = $${paramCount}`);
+      values.push(guestData.checkOutDate);
+      paramCount++;
+    }
+
+    if (guestData.numberOfGuests !== undefined) {
+      updateFields.push(`number_of_guests = $${paramCount}`);
+      values.push(guestData.numberOfGuests);
+      paramCount++;
+    }
+
+    if (guestData.totalPrice !== undefined) {
+      updateFields.push(`total_price = $${paramCount}`);
+      values.push(guestData.totalPrice);
       paramCount++;
     }
 

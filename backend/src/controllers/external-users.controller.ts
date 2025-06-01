@@ -106,7 +106,8 @@ export const createExternalUserController = async (req: Request, res: Response, 
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new AppError(error.message, 400));
+      const errorDetails = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      next(new AppError(`Validation error: ${errorDetails}`, 400));
     } else {
       next(error);
     }
@@ -135,7 +136,8 @@ export const updateExternalUserController = async (req: Request, res: Response, 
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new AppError(error.message, 400));
+      const errorDetails = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      next(new AppError(`Validation error: ${errorDetails}`, 400));
     } else {
       next(error);
     }
@@ -192,7 +194,8 @@ export const loginExternalUserController = async (req: Request, res: Response, n
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new AppError(error.message, 400));
+      const errorDetails = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      next(new AppError(`Validation error: ${errorDetails}`, 400));
     } else {
       next(error);
     }

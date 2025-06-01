@@ -112,6 +112,46 @@ async function executeSupabaseQuery(text: string, _params: any[] = []): Promise<
       }
     }
 
+    // Handle external users authentication queries
+    if (lowerText.includes('from external_users')) {
+      if (lowerText.includes('where email =') && _params.length > 0) {
+        // Login query - select external user by email
+        const { data, error } = await supabase
+          .from('external_users')
+          .select('*')
+          .eq('email', _params[0])
+          .eq('is_active', true)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No rows found
+            return { rows: [], rowCount: 0 };
+          }
+          throw error;
+        }
+        return { rows: [data], rowCount: 1 };
+      }
+
+      if (lowerText.includes('where id =') && _params.length > 0) {
+        // Get external user by ID (for auth middleware)
+        const { data, error } = await supabase
+          .from('external_users')
+          .select('id, email, role')
+          .eq('id', _params[0])
+          .eq('is_active', true)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            return { rows: [], rowCount: 0 };
+          }
+          throw error;
+        }
+        return { rows: [data], rowCount: 1 };
+      }
+    }
+
     if (lowerText.includes('from notification_bars')) {
       let query = supabase.from('notification_bars').select('*');
 
@@ -534,6 +574,52 @@ async function executeSupabaseQuery(text: string, _params: any[] = []): Promise<
       if (error) throw error;
       return { rows: [data], rowCount: 1 };
     }
+
+    if (lowerText.includes('into external_users')) {
+      const { data, error } = await supabase
+        .from('external_users')
+        .insert({
+          email: _params[0],
+          password: _params[1],
+          first_name: _params[2],
+          last_name: _params[3],
+          created_by: _params[4]
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { rows: [data], rowCount: 1 };
+    }
+
+    if (lowerText.includes('into guests')) {
+      const { data, error } = await supabase
+        .from('guests')
+        .insert({
+          first_name: _params[0],
+          last_name: _params[1],
+          email: _params[2],
+          phone: _params[3] || null,
+          city: _params[4] || null,
+          country: _params[5] || null,
+          date_of_birth: _params[6] || null,
+          identification_type: _params[7] || null,
+          identification_number: _params[8] || null,
+          special_requirements: _params[9] || null,
+          room_number: _params[10] || null,
+          check_in_date: _params[11] || null,
+          check_out_date: _params[12] || null,
+          number_of_guests: _params[13] || 1,
+          total_price: _params[14] || null,
+          created_by_user_id: _params[15] || null,
+          created_by_external_user_id: _params[16] || null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { rows: [data], rowCount: 1 };
+    }
   }
 
   // Handle UPDATE queries
@@ -661,6 +747,30 @@ async function executeSupabaseQuery(text: string, _params: any[] = []): Promise<
       return { rows: [data], rowCount: 1 };
     }
 
+    // Handle contact message mark as read
+    if (lowerText.includes('update contact_messages') && lowerText.includes('is_read = true') && lowerText.includes('where id =')) {
+      const contactId = _params[0];
+      console.log('Marking contact message as read with ID:', contactId);
+
+      const { data, error } = await supabase
+        .from('contact_messages')
+        .update({
+          is_read: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contactId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase contact message UPDATE error:', error);
+        throw error;
+      }
+
+      console.log('Contact message marked as read successfully:', data);
+      return { rows: [data], rowCount: 1 };
+    }
+
     // If no specific UPDATE pattern matches, log and throw error
     console.warn('UPDATE query pattern not recognized:', text);
     throw new Error(`UPDATE query pattern not implemented: ${text.substring(0, 100)}...`);
@@ -691,13 +801,13 @@ async function executeSupabaseQuery(text: string, _params: any[] = []): Promise<
       return { rows: [data], rowCount: 1 };
     }
 
-    // Handle DELETE FROM contact WHERE id = $1
-    if (lowerText.includes('from contact') && lowerText.includes('where id =')) {
+    // Handle DELETE FROM contact_messages WHERE id = $1
+    if (lowerText.includes('from contact_messages') && lowerText.includes('where id =')) {
       const contactId = _params[0];
-      console.log('Deleting contact with ID:', contactId);
+      console.log('Deleting contact message with ID:', contactId);
 
       const { data, error } = await supabase
-        .from('contact')
+        .from('contact_messages')
         .delete()
         .eq('id', contactId)
         .select('id')
@@ -708,7 +818,7 @@ async function executeSupabaseQuery(text: string, _params: any[] = []): Promise<
         throw error;
       }
 
-      console.log('Contact deleted successfully:', data);
+      console.log('Contact message deleted successfully:', data);
       return { rows: [data], rowCount: 1 };
     }
 
@@ -796,9 +906,270 @@ async function executeSupabaseQuery(text: string, _params: any[] = []): Promise<
       return { rows: [data], rowCount: 1 };
     }
 
+    // Handle DELETE FROM external_users WHERE id = $1
+    if (lowerText.includes('from external_users') && lowerText.includes('where id =')) {
+      const externalUserId = _params[0];
+      console.log('Deleting external user with ID:', externalUserId);
+
+      const { data, error } = await supabase
+        .from('external_users')
+        .delete()
+        .eq('id', externalUserId)
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Supabase DELETE error:', error);
+        throw error;
+      }
+
+      console.log('External user deleted successfully:', data);
+      return { rows: [data], rowCount: 1 };
+    }
+
+    // Handle DELETE FROM guests WHERE id = $1
+    if (lowerText.includes('from guests') && lowerText.includes('where id =')) {
+      const guestId = _params[0];
+      console.log('Deleting guest with ID:', guestId);
+
+      const { data, error } = await supabase
+        .from('guests')
+        .delete()
+        .eq('id', guestId)
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Supabase DELETE error:', error);
+        throw error;
+      }
+
+      console.log('Guest deleted successfully:', data);
+      return { rows: [data], rowCount: 1 };
+    }
+
     // If no specific DELETE pattern matches, log and throw error
     console.warn('DELETE query pattern not recognized:', text);
     throw new Error(`DELETE query pattern not implemented: ${text.substring(0, 100)}...`);
+  }
+
+  // Handle external users queries with JOINs
+  if (text.includes('FROM external_users eu') && text.includes('LEFT JOIN users u')) {
+    if (text.includes('WHERE eu.id = $1')) {
+      // Get external user by ID with creator info
+      const { data, error } = await supabase
+        .from('external_users')
+        .select(`
+          *,
+          users!external_users_created_by_fkey(first_name, last_name)
+        `)
+        .eq('id', _params[0])
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Flatten the creator info
+        const result = {
+          ...data,
+          creator_first_name: data.users?.first_name || null,
+          creator_last_name: data.users?.last_name || null
+        };
+        delete result.users;
+        return { rows: [result], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    } else {
+      // Get all external users with creator info
+      const { data, error } = await supabase
+        .from('external_users')
+        .select(`
+          *,
+          users!external_users_created_by_fkey(first_name, last_name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Flatten the creator info for each user
+      const results = (data || []).map(user => ({
+        ...user,
+        creator_first_name: user.users?.first_name || null,
+        creator_last_name: user.users?.last_name || null,
+        users: undefined
+      }));
+
+      return { rows: results, rowCount: results.length };
+    }
+  }
+
+  // Handle specific guest query with CONCAT for external users only
+  if (text.includes('CONCAT(eu.first_name') && text.includes('FROM guests g') && text.includes('LEFT JOIN external_users eu') && text.includes('WHERE g.created_by_external_user_id = $1')) {
+    // Get guests by external user ID with creator name
+    const { data, error } = await supabase
+      .from('guests')
+      .select(`
+        *,
+        external_users!guests_created_by_external_user_id_fkey(first_name, last_name)
+      `)
+      .eq('created_by_external_user_id', _params[0])
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const results = (data || []).map(guest => ({
+      ...guest,
+      creator_name: guest.external_users ? `${guest.external_users.first_name} ${guest.external_users.last_name}` : 'Unknown',
+      creator_type: 'external_user',
+      external_users: undefined
+    }));
+
+    return { rows: results, rowCount: results.length };
+  }
+
+  // Handle guest by ID query with CASE and CONCAT
+  if (text.includes('CASE') && text.includes('CONCAT(u.first_name') && text.includes('CONCAT(eu.first_name') && text.includes('FROM guests g') && text.includes('WHERE g.id = $1')) {
+    // Get guest by ID with creator info using CASE logic
+    const { data, error } = await supabase
+      .from('guests')
+      .select(`
+        *,
+        users!guests_created_by_user_id_fkey(first_name, last_name),
+        external_users!guests_created_by_external_user_id_fkey(first_name, last_name)
+      `)
+      .eq('id', _params[0])
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new Error('Guest not found');
+      }
+      throw error;
+    }
+
+    if (data) {
+      // Implement CASE logic for creator info
+      let creator_name = 'Unknown';
+      let creator_type = 'unknown';
+
+      if (data.created_by_user_id && data.users) {
+        creator_name = `${data.users.first_name} ${data.users.last_name}`;
+        creator_type = 'admin';
+      } else if (data.created_by_external_user_id && data.external_users) {
+        creator_name = `${data.external_users.first_name} ${data.external_users.last_name}`;
+        creator_type = 'external_user';
+      }
+
+      const result = {
+        ...data,
+        creator_name,
+        creator_type
+      };
+      delete result.users;
+      delete result.external_users;
+
+      return { rows: [result], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  }
+
+  // Handle guests queries with JOINs
+  if (text.includes('FROM guests g') && text.includes('LEFT JOIN users u') && text.includes('LEFT JOIN external_users eu')) {
+    if (text.includes('WHERE g.id = $1')) {
+      // Get guest by ID with creator info
+      const { data, error } = await supabase
+        .from('guests')
+        .select(`
+          *,
+          users!guests_created_by_user_id_fkey(first_name, last_name),
+          external_users!guests_created_by_external_user_id_fkey(first_name, last_name)
+        `)
+        .eq('id', _params[0])
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Determine creator info and type
+        let creator_name = 'Unknown';
+        let creator_type = 'unknown';
+
+        if (data.created_by_user_id && data.users) {
+          creator_name = `${data.users.first_name} ${data.users.last_name}`;
+          creator_type = 'admin';
+        } else if (data.created_by_external_user_id && data.external_users) {
+          creator_name = `${data.external_users.first_name} ${data.external_users.last_name}`;
+          creator_type = 'external_user';
+        }
+
+        const result = {
+          ...data,
+          creator_name,
+          creator_type
+        };
+        delete result.users;
+        delete result.external_users;
+
+        return { rows: [result], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    } else if (text.includes('WHERE g.created_by_external_user_id = $1')) {
+      // Get guests by external user ID
+      const { data, error } = await supabase
+        .from('guests')
+        .select(`
+          *,
+          external_users!guests_created_by_external_user_id_fkey(first_name, last_name)
+        `)
+        .eq('created_by_external_user_id', _params[0])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const results = (data || []).map(guest => ({
+        ...guest,
+        creator_name: guest.external_users ? `${guest.external_users.first_name} ${guest.external_users.last_name}` : 'Unknown',
+        creator_type: 'external_user',
+        external_users: undefined
+      }));
+
+      return { rows: results, rowCount: results.length };
+    } else {
+      // Get all guests with creator info
+      const { data, error } = await supabase
+        .from('guests')
+        .select(`
+          *,
+          users!guests_created_by_user_id_fkey(first_name, last_name),
+          external_users!guests_created_by_external_user_id_fkey(first_name, last_name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const results = (data || []).map(guest => {
+        let creator_name = 'Unknown';
+        let creator_type = 'unknown';
+
+        if (guest.created_by_user_id && guest.users) {
+          creator_name = `${guest.users.first_name} ${guest.users.last_name}`;
+          creator_type = 'admin';
+        } else if (guest.created_by_external_user_id && guest.external_users) {
+          creator_name = `${guest.external_users.first_name} ${guest.external_users.last_name}`;
+          creator_type = 'external_user';
+        }
+
+        return {
+          ...guest,
+          creator_name,
+          creator_type,
+          users: undefined,
+          external_users: undefined
+        };
+      });
+
+      return { rows: results, rowCount: results.length };
+    }
   }
 
   // For other queries, throw an error indicating fallback limitation

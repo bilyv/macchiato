@@ -87,7 +87,7 @@ const AdminLogin = () => {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex flex-col items-center space-y-2">
           <Button
             variant="link"
             className="text-[#8A5A44]"
@@ -95,6 +95,18 @@ const AdminLogin = () => {
           >
             Return to Website
           </Button>
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Are you a worker?{' '}
+              <Button
+                variant="link"
+                className="text-amber-600 hover:text-amber-700 p-0 h-auto font-medium"
+                onClick={() => navigate('/worker/login')}
+              >
+                Worker Login
+              </Button>
+            </p>
+          </div>
         </CardFooter>
       </Card>
     </div>
