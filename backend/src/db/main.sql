@@ -51,8 +51,8 @@ CREATE TABLE rooms (
   room_type TEXT NOT NULL,
   image_url TEXT,
   amenities TEXT[] DEFAULT '{}',
-  display_category TEXT,
   is_available BOOLEAN DEFAULT TRUE,
+  is_website_visible BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -122,6 +122,75 @@ CREATE TABLE menu_images (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Bookings Table
+-- This table stores hotel room booking information and reservations
+CREATE TABLE bookings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  guest_name TEXT NOT NULL,
+  guest_email TEXT NOT NULL,
+  guest_phone TEXT,
+  room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+  check_in_date DATE NOT NULL,
+  check_out_date DATE NOT NULL,
+  number_of_guests INTEGER NOT NULL CHECK (number_of_guests > 0),
+  special_requests TEXT,
+  booking_status TEXT NOT NULL DEFAULT 'pending' CHECK (booking_status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+  total_amount DECIMAL(10, 2) NOT NULL CHECK (total_amount >= 0),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Ensure check-out date is after check-in date
+  CONSTRAINT check_dates CHECK (check_out_date > check_in_date)
+);
+
+-- External Users Table
+-- This table stores external users created by admin with limited access to guest management
+-- External users can only access guest entry functionality, not the full admin panel
+CREATE TABLE external_users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'external_user',
+  is_active BOOLEAN DEFAULT TRUE,
+  created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Guests Table
+-- This table stores guest information entered by external users or admin
+-- Guests are visitors/customers who may or may not have bookings
+CREATE TABLE guests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  address TEXT,
+  city TEXT,
+  country TEXT,
+  date_of_birth DATE,
+  identification_type TEXT CHECK (identification_type IN ('passport', 'driver_license', 'national_id', 'other')),
+  identification_number TEXT,
+  emergency_contact_name TEXT,
+  emergency_contact_phone TEXT,
+  special_requirements TEXT,
+  notes TEXT,
+  is_vip BOOLEAN DEFAULT FALSE,
+  created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_by_external_user_id UUID REFERENCES external_users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Ensure at least one creator is specified
+  CONSTRAINT check_creator CHECK (
+    (created_by_user_id IS NOT NULL AND created_by_external_user_id IS NULL) OR
+    (created_by_user_id IS NULL AND created_by_external_user_id IS NOT NULL)
+  )
+);
+
 -- =============================================================================
 -- TRIGGERS
 -- =============================================================================
@@ -159,6 +228,21 @@ CREATE TRIGGER update_menu_items_updated_at
 
 CREATE TRIGGER update_menu_images_updated_at
   BEFORE UPDATE ON menu_images
+  FOR EACH ROW
+  EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER update_bookings_updated_at
+  BEFORE UPDATE ON bookings
+  FOR EACH ROW
+  EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER update_external_users_updated_at
+  BEFORE UPDATE ON external_users
+  FOR EACH ROW
+  EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER update_guests_updated_at
+  BEFORE UPDATE ON guests
   FOR EACH ROW
   EXECUTE PROCEDURE update_updated_at_column();
 
@@ -201,6 +285,29 @@ CREATE INDEX idx_menu_items_created_at ON menu_items(created_at);
 -- Menu images table indexes
 CREATE INDEX idx_menu_images_category ON menu_images(category);
 CREATE INDEX idx_menu_images_created_at ON menu_images(created_at);
+
+-- Bookings table indexes
+CREATE INDEX idx_bookings_guest_email ON bookings(guest_email);
+CREATE INDEX idx_bookings_room_id ON bookings(room_id);
+CREATE INDEX idx_bookings_status ON bookings(booking_status);
+CREATE INDEX idx_bookings_dates ON bookings(check_in_date, check_out_date);
+CREATE INDEX idx_bookings_created_at ON bookings(created_at);
+
+-- External users table indexes
+CREATE INDEX idx_external_users_email ON external_users(email);
+CREATE INDEX idx_external_users_role ON external_users(role);
+CREATE INDEX idx_external_users_is_active ON external_users(is_active);
+CREATE INDEX idx_external_users_created_by ON external_users(created_by);
+
+-- Guests table indexes
+CREATE INDEX idx_guests_email ON guests(email);
+CREATE INDEX idx_guests_phone ON guests(phone);
+CREATE INDEX idx_guests_first_name ON guests(first_name);
+CREATE INDEX idx_guests_last_name ON guests(last_name);
+CREATE INDEX idx_guests_is_vip ON guests(is_vip);
+CREATE INDEX idx_guests_created_by_user_id ON guests(created_by_user_id);
+CREATE INDEX idx_guests_created_by_external_user_id ON guests(created_by_external_user_id);
+CREATE INDEX idx_guests_created_at ON guests(created_at);
 
 -- =============================================================================
 -- DEFAULT DATA

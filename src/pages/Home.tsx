@@ -6,8 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InfiniteScrollReviews from "@/components/InfiniteScrollReviews";
 import { BookingFormDialog } from "@/components/BookingFormDialog";
-import { api } from "@/lib/api";
-import { Room } from "@/lib/api/rooms";
+// Removed room imports since we're not showing featured rooms anymore
 
 interface PageContent {
   welcomeTitle: string;
@@ -24,30 +23,7 @@ const Home = () => {
     heroSubtitle: "Experience unparalleled elegance and tranquility at Macchiato Suites, where every stay is crafted for perfection."
   });
 
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [featuredRooms, setFeaturedRooms] = useState<Room[]>([]);
-  const [elegantSuites, setElegantSuites] = useState<Room[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.rooms.getAll();
-        setRooms(response.data);
-
-        // Filter rooms by category
-        setFeaturedRooms(response.data.filter(room => room.category === 'Featured Rooms'));
-        setElegantSuites(response.data.filter(room => room.category === 'Our Elegant Suites'));
-      } catch (error) {
-        console.error('Error fetching rooms:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRooms();
-  }, []);
+  // Removed room fetching since we're not showing featured rooms anymore
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -182,121 +158,165 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Elegant Suites Showcase */}
-      {elegantSuites.length > 0 && (
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-3 text-[#8A5A44]">
-              Our Elegant Suites
-            </h2>
-            <p className="text-lg text-neutral-600 mb-10">
-              Discover our collection of thoughtfully designed accommodations
-            </p>
+      {/* Experience & Services Section */}
+      <section className="py-20 bg-gradient-to-br from-white via-[#F9F5F2] to-[#EEDFD0] relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-[#C45D3A]/5 rounded-full animate-float" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute bottom-32 right-20 w-24 h-24 bg-[#8A5A44]/5 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-[#E8C3A3]/10 rounded-full animate-float" style={{ animationDelay: '4s' }}></div>
+        </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {elegantSuites.slice(0, 3).map((room) => (
-                <div key={room.id} className="group rounded-lg overflow-hidden shadow-sm border border-neutral-200 hover:shadow-md transition-all">
-                  <div className="h-64 overflow-hidden relative">
+        <div className="container mx-auto px-4 relative z-10">
+          {/* Section Header */}
+          <div className="text-center mb-16 animate-fade-in">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <div className="w-8 h-0.5 bg-gradient-to-r from-transparent to-[#C45D3A]"></div>
+              <Coffee className="h-6 w-6 text-[#C45D3A]" />
+              <div className="w-8 h-0.5 bg-gradient-to-l from-transparent to-[#C45D3A]"></div>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6 text-[#8A5A44]">
+              Exceptional Experiences
+            </h2>
+            <p className="text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
+              Discover the perfect blend of luxury, comfort, and personalized service that makes
+              every moment at Macchiato Suites truly unforgettable.
+            </p>
+          </div>
+
+          {/* Experience Grid */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            {/* Left Side - Image Gallery */}
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div className="group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
                     <img
-                      src={room.image_url || "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"}
-                      alt={room.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=2080"
+                      alt="Luxury Hotel Lobby"
+                      className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">{room.name}</h3>
-                    <p className="text-neutral-600 mb-4">{room.description.length > 100 ? `${room.description.substring(0, 100)}...` : room.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#C45D3A]">${room.price_per_night} <span className="text-sm font-normal text-neutral-500">/night</span></span>
-                      <Button variant="outline" size="sm" className="text-[#C45D3A] border-[#C45D3A]">
-                        <Link to="/rooms">View Details</Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Show placeholder cards if we have less than 3 rooms */}
-              {elegantSuites.length < 3 && isLoading && (
-                Array(3 - elegantSuites.length).fill(0).map((_, index) => (
-                  <div key={`placeholder-${index}`} className="rounded-lg overflow-hidden shadow-sm border border-neutral-200 animate-pulse">
-                    <div className="h-64 bg-gray-200"></div>
-                    <div className="p-6">
-                      <div className="h-6 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded mb-4"></div>
-                      <div className="flex items-center justify-between">
-                        <div className="h-6 w-20 bg-gray-200 rounded"></div>
-                        <div className="h-8 w-24 bg-gray-200 rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="mt-12 text-center">
-              <Button className="bg-[#8A5A44] hover:bg-[#6B4636] text-white">
-                <Link to="/rooms">View All Rooms</Link> <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Featured Rooms Showcase */}
-      {featuredRooms.length > 0 && (
-        <section className="py-16 bg-[#F9F5F2]">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-3 text-[#8A5A44]">
-              Featured Rooms
-            </h2>
-            <p className="text-lg text-neutral-600 mb-10">
-              Our most popular accommodations with premium amenities
-            </p>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredRooms.slice(0, 3).map((room) => (
-                <div key={room.id} className="group rounded-lg overflow-hidden shadow-sm bg-white border border-neutral-200 hover:shadow-md transition-all">
-                  <div className="h-64 overflow-hidden relative">
+                  <div className="group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
                     <img
-                      src={room.image_url || "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2070"}
-                      alt={room.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=2070"
+                      alt="Fine Dining Restaurant"
+                      className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2 text-[#8A5A44]">{room.name}</h3>
-                    <p className="text-neutral-600 mb-4">{room.description.length > 100 ? `${room.description.substring(0, 100)}...` : room.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#C45D3A]">${room.price_per_night} <span className="text-sm font-normal text-neutral-500">/night</span></span>
-                      <Button variant="outline" size="sm" className="text-[#C45D3A] border-[#C45D3A]">
-                        <Link to="/rooms">View Details</Link>
-                      </Button>
-                    </div>
+                </div>
+                <div className="space-y-4 pt-8">
+                  <div className="group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+                    <img
+                      src="https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=2074"
+                      alt="Spa and Wellness"
+                      className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                  </div>
+                  <div className="group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
+                    <img
+                      src="https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?q=80&w=2071"
+                      alt="Business Center"
+                      className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
                   </div>
                 </div>
-              ))}
+              </div>
 
-              {/* Show placeholder cards if we have less than 3 rooms */}
-              {featuredRooms.length < 3 && isLoading && (
-                Array(3 - featuredRooms.length).fill(0).map((_, index) => (
-                  <div key={`placeholder-${index}`} className="rounded-lg overflow-hidden shadow-sm border border-neutral-200 animate-pulse">
-                    <div className="h-64 bg-gray-200"></div>
-                    <div className="p-6">
-                      <div className="h-6 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded mb-4"></div>
-                      <div className="flex items-center justify-between">
-                        <div className="h-6 w-20 bg-gray-200 rounded"></div>
-                        <div className="h-8 w-24 bg-gray-200 rounded"></div>
-                      </div>
-                    </div>
+              {/* Floating Badge */}
+              <div className="absolute -top-4 -right-4 bg-[#C45D3A] text-white px-6 py-3 rounded-full shadow-lg animate-float">
+                <span className="font-semibold text-sm">Premium Services</span>
+              </div>
+            </div>
+
+            {/* Right Side - Services List */}
+            <div className="space-y-8">
+              <div className="group">
+                <div className="flex items-start gap-4 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#C45D3A] to-[#A74B2F] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <BedDouble className="h-6 w-6 text-white" />
                   </div>
-                ))
-              )}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-serif font-bold mb-2 text-[#8A5A44]">Luxury Accommodations</h3>
+                    <p className="text-neutral-600 leading-relaxed">
+                      Elegantly appointed rooms and suites featuring premium amenities,
+                      plush bedding, and stunning city views for the ultimate comfort.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="group">
+                <div className="flex items-start gap-4 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#8A5A44] to-[#6B4636] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Coffee className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-serif font-bold mb-2 text-[#8A5A44]">Gourmet Dining</h3>
+                    <p className="text-neutral-600 leading-relaxed">
+                      Savor exceptional cuisine crafted by our expert chefs using the finest
+                      local ingredients in our elegant restaurant and bar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="group">
+                <div className="flex items-start gap-4 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#E8C3A3] to-[#D4B896] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Wifi className="h-6 w-6 text-[#8A5A44]" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-serif font-bold mb-2 text-[#8A5A44]">Business & Wellness</h3>
+                    <p className="text-neutral-600 leading-relaxed">
+                      State-of-the-art business facilities, high-speed WiFi, fitness center,
+                      and spa services to keep you productive and refreshed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div className="pt-4">
+                <Button className="bg-gradient-to-r from-[#C45D3A] to-[#A74B2F] hover:from-[#A74B2F] hover:to-[#8A5A44] text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <Link to="/rooms" className="flex items-center gap-2">
+                    Explore Our Rooms
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
-        </section>
-      )}
+
+          {/* Stats Section */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-16 border-t border-[#E8C3A3]/30">
+            <div className="text-center group">
+              <div className="text-3xl md:text-4xl font-bold text-[#C45D3A] mb-2 group-hover:scale-110 transition-transform duration-300">
+                50+
+              </div>
+              <div className="text-sm text-neutral-600 font-medium">Luxury Rooms</div>
+            </div>
+            <div className="text-center group">
+              <div className="text-3xl md:text-4xl font-bold text-[#C45D3A] mb-2 group-hover:scale-110 transition-transform duration-300">
+                24/7
+              </div>
+              <div className="text-sm text-neutral-600 font-medium">Concierge Service</div>
+            </div>
+            <div className="text-center group">
+              <div className="text-3xl md:text-4xl font-bold text-[#C45D3A] mb-2 group-hover:scale-110 transition-transform duration-300">
+                5★
+              </div>
+              <div className="text-sm text-neutral-600 font-medium">Guest Rating</div>
+            </div>
+            <div className="text-center group">
+              <div className="text-3xl md:text-4xl font-bold text-[#C45D3A] mb-2 group-hover:scale-110 transition-transform duration-300">
+                100%
+              </div>
+              <div className="text-sm text-neutral-600 font-medium">Satisfaction</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Reviews Section */}
       <section className="py-16 bg-[#F9F5F2]">

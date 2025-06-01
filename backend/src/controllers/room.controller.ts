@@ -26,11 +26,11 @@ const roomSchema = z.object({
   ]).refine(val => val > 0, 'Capacity must be a positive integer'),
   room_type: z.string().min(1, 'Room type is required'),
   amenities: z.array(z.string()).optional(),
-  display_category: z.string().optional(),
-  is_available: z.boolean().default(true)
+  is_available: z.boolean().default(true),
+  is_website_visible: z.boolean().default(false)
 });
 
-// Get all rooms
+// Get all rooms (admin access - includes all rooms regardless of visibility)
 export const getAllRooms = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await query(
@@ -44,6 +44,23 @@ export const getAllRooms = async (_req: Request, res: Response, next: NextFuncti
     });
   } catch (error) {
     next(new AppError('Error fetching rooms', 500));
+  }
+};
+
+// Get website-visible rooms only (public access - only shows approved rooms)
+export const getWebsiteRooms = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await query(
+      'SELECT * FROM rooms WHERE is_website_visible = true ORDER BY room_number ASC'
+    );
+
+    res.status(200).json({
+      status: 'success',
+      results: result.rowCount,
+      data: result.rows
+    });
+  } catch (error) {
+    next(new AppError('Error fetching website rooms', 500));
   }
 };
 
@@ -143,7 +160,7 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
     const result = await query(
       `INSERT INTO rooms (
         room_number, description, price_per_night, capacity,
-        room_type, image_url, amenities, display_category, is_available
+        room_type, image_url, amenities, is_available, is_website_visible
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
@@ -154,8 +171,8 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
         roomData.room_type,
         imageUrl,
         roomData.amenities || [],
-        roomData.display_category || null,
-        roomData.is_available
+        roomData.is_available,
+        roomData.is_website_visible || false
       ]
     );
 
@@ -193,6 +210,15 @@ export const createRoom = async (req: MulterRequest, res: Response, next: NextFu
           next(new AppError(`Room number ${roomNumber} already exists. Please choose a different room number.`, 409));
         } else {
           next(new AppError(`Error creating room: ${error.message}`, 500));
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        // Handle Supabase-specific errors
+        const supabaseError = error as any;
+        if (supabaseError.code === '23505' && supabaseError.message.includes('rooms_room_number_key')) {
+          const roomNumber = roomData?.room_number || 'unknown';
+          next(new AppError(`Room number ${roomNumber} already exists. Please choose a different room number.`, 409));
+        } else {
+          next(new AppError(`Error creating room: ${supabaseError.message || 'Database error'}`, 500));
         }
       } else {
         next(new AppError('Error creating room: Unknown error', 500));
@@ -264,8 +290,8 @@ export const updateRoom = async (req: MulterRequest, res: Response, next: NextFu
         room_type = $5,
         image_url = $6,
         amenities = $7,
-        display_category = $8,
-        is_available = $9,
+        is_available = $8,
+        is_website_visible = $9,
         updated_at = NOW()
       WHERE id = $10
       RETURNING *`,
@@ -277,8 +303,8 @@ export const updateRoom = async (req: MulterRequest, res: Response, next: NextFu
         roomData.room_type,
         imageUrl,
         roomData.amenities || [],
-        roomData.display_category || null,
         roomData.is_available,
+        roomData.is_website_visible !== undefined ? roomData.is_website_visible : existingRoom.is_website_visible,
         id
       ]
     );
@@ -350,6 +376,89 @@ export const deleteRoom = async (req: Request, res: Response, next: NextFunction
       next(error);
     } else {
       next(new AppError('Error deleting room', 500));
+    }
+  }
+};
+
+// Add rooms to website (make them visible)
+export const addRoomsToSite = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    console.log('addRoomsToSite - Request body:', req.body);
+    console.log('addRoomsToSite - Request body type:', typeof req.body);
+
+    const { roomIds } = req.body;
+    console.log('addRoomsToSite - Extracted roomIds:', roomIds);
+    console.log('addRoomsToSite - roomIds type:', typeof roomIds);
+
+    // Validate input
+    if (!Array.isArray(roomIds) || roomIds.length === 0) {
+      throw new AppError('Room IDs array is required and cannot be empty', 400);
+    }
+
+    // Update rooms to make them website visible
+    const placeholders = roomIds.map((_, index) => `$${index + 1}`).join(', ');
+    const result = await query(
+      `UPDATE rooms SET
+        is_website_visible = true,
+        updated_at = NOW()
+      WHERE id IN (${placeholders})
+      RETURNING *`,
+      roomIds
+    );
+
+    if (result.rowCount === 0) {
+      throw new AppError('No rooms found with the provided IDs', 404);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: `${result.rowCount} room(s) added to website`,
+      data: result.rows
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error adding rooms to website', 500));
+    }
+  }
+};
+
+// Remove rooms from website (make them not visible)
+export const removeRoomsFromSite = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { roomIds } = req.body;
+
+    // Validate input
+    if (!Array.isArray(roomIds) || roomIds.length === 0) {
+      throw new AppError('Room IDs array is required and cannot be empty', 400);
+    }
+
+    // Update rooms to make them not website visible
+    const placeholders = roomIds.map((_, index) => `$${index + 1}`).join(', ');
+    const result = await query(
+      `UPDATE rooms SET
+        is_website_visible = false,
+        updated_at = NOW()
+      WHERE id IN (${placeholders})
+      RETURNING *`,
+      roomIds
+    );
+
+    if (result.rowCount === 0) {
+      throw new AppError('No rooms found with the provided IDs', 404);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: `${result.rowCount} room(s) removed from website`,
+      data: result.rows
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(new AppError('Error removing rooms from website', 500));
     }
   }
 };

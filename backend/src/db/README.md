@@ -16,7 +16,8 @@ backend/src/db/
 │   ├── gallery_images.sql     # Gallery images table schema
 │   ├── notification_bars.sql  # Notification bars table schema
 │   ├── menu_items.sql         # Menu items table schema
-│   └── menu_images.sql        # Menu images table schema
+│   ├── menu_images.sql        # Menu images table schema
+│   └── bookings.sql           # Bookings table schema
 └── README.md                  # This documentation file
 ```
 
@@ -60,6 +61,12 @@ backend/src/db/
 - **Key Fields**: id, title, category, image_url
 - **Categories**: drinks, desserts, others
 - **Indexes**: category, created_at
+
+### 8. Bookings (`bookings`)
+- **Purpose**: Stores hotel room booking information and reservations
+- **Key Fields**: id, guest_name, guest_email, guest_phone, room_id, check_in_date, check_out_date, number_of_guests, special_requests, booking_status, total_amount
+- **Status Types**: pending, confirmed, cancelled, completed
+- **Indexes**: guest_email, room_id, booking_status, dates, created_at
 
 ## Database Setup
 

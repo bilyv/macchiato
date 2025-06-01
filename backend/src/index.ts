@@ -9,6 +9,9 @@ import contactRoutes from './routes/contact.routes.js';
 import roomRoutes from './routes/room.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import menuRoutes from './routes/menu.routes.js';
+import bookingRoutes from './routes/booking.routes.js';
+import externalUsersRoutes from './routes/external-users.routes.js';
+import guestsRoutes from './routes/guests.routes.js';
 // Using public notification bar routes for testing
 import notificationBarPublicRoutes from './routes/notification-bar-public.routes.js';
 import './config/database.js'; // Initialize database connection
@@ -44,8 +47,48 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(morgan('dev'));
-app.use(express.json());
+
+// Add request logging middleware for debugging
+app.use((req, _res, next) => {
+  if (req.path.includes('/api/bookings') && req.method === 'POST') {
+    console.log('=== BOOKING REQUEST DEBUG ===');
+    console.log('Method:', req.method);
+    console.log('Path:', req.path);
+    console.log('Content-Type:', req.get('Content-Type'));
+    console.log('Raw body (before parsing):', req.body);
+  }
+  next();
+});
+
+// JSON parsing middleware with error handling
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, _res, buf, _encoding) => {
+    if (req.url && req.url.includes('/api/bookings') && req.method === 'POST') {
+      console.log('Raw buffer:', buf.toString());
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
+
+// Custom error handler for JSON parsing errors
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (error instanceof SyntaxError && 'body' in error) {
+    console.error('=== JSON PARSING ERROR ===');
+    console.error('Error:', error.message);
+    console.error('Request path:', req.path);
+    console.error('Request method:', req.method);
+    console.error('Content-Type:', req.get('Content-Type'));
+    console.error('Raw body that caused error:', error.body);
+
+    return res.status(400).json({
+      error: 'Invalid JSON',
+      message: 'The request body contains invalid JSON format',
+      details: error.message
+    });
+  }
+  next(error);
+});
 
 // Root route - API information
 app.get('/', (_req, res) => {
@@ -61,6 +104,9 @@ app.get('/', (_req, res) => {
       rooms: '/api/rooms',
       gallery: '/api/gallery',
       menu: '/api/menu',
+      bookings: '/api/bookings',
+      externalUsers: '/api/external-users',
+      guests: '/api/guests',
       notifications: '/api/notification-bars'
     },
     documentation: 'API endpoints are available under /api/*'
@@ -73,6 +119,9 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/external-users', externalUsersRoutes);
+app.use('/api/guests', guestsRoutes);
 // Use the public notification bar routes for testing
 app.use('/api/notification-bars', notificationBarPublicRoutes);
 
@@ -94,6 +143,9 @@ app.use('*', (_req, res) => {
       rooms: '/api/rooms',
       gallery: '/api/gallery',
       menu: '/api/menu',
+      bookings: '/api/bookings',
+      externalUsers: '/api/external-users',
+      guests: '/api/guests',
       notifications: '/api/notification-bars'
     }
   });

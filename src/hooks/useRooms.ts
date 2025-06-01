@@ -10,7 +10,6 @@ export interface Room {
   room_type: string;
   image_url: string;
   amenities: string[];
-  display_category: string;
   is_available: boolean;
   created_at: string;
   updated_at: string;
@@ -25,12 +24,13 @@ export function useRooms() {
     const fetchRooms = async () => {
       setIsLoading(true);
       try {
-        const response = await api.rooms.getAll();
+        // Use getWebsiteRooms to only fetch approved/visible rooms for public display
+        const response = await api.rooms.getWebsiteRooms();
         setRooms(response.data);
         setError(null);
       } catch (err) {
-        console.error('Error fetching rooms:', err);
-        setError(err instanceof Error ? err : new Error('Failed to fetch rooms'));
+        console.error('Error fetching website rooms:', err);
+        setError(err instanceof Error ? err : new Error('Failed to fetch website rooms'));
       } finally {
         setIsLoading(false);
       }

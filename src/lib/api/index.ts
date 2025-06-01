@@ -5,6 +5,9 @@ import notificationBarsApi from './notification-bars';
 import roomsApi from './rooms';
 import galleryApi from './gallery';
 import menuApi from './menu';
+import bookingsApi from './bookings';
+import externalUsersApi from './external-users';
+import guestsApi from './guests';
 
 // Combined API object
 export const api = {
@@ -13,6 +16,9 @@ export const api = {
   rooms: roomsApi,
   gallery: galleryApi,
   menu: menuApi,
+  bookings: bookingsApi,
+  externalUsers: externalUsersApi,
+  guests: guestsApi,
 };
 
 // Export individual modules and utilities
@@ -22,6 +28,9 @@ export { notificationBarsApi };
 export { roomsApi };
 export { galleryApi };
 export { menuApi };
+export { bookingsApi };
+export { externalUsersApi };
+export { guestsApi };
 
 // Default export for backward compatibility
 export default api;

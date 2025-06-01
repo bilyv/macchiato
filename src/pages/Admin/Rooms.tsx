@@ -16,7 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Plus, BedDouble, Loader2, X, Copy, Search } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Pencil, Trash2, Plus, BedDouble, Loader2, X, Copy, Search, CheckSquare, Square } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import {
   Dialog,
@@ -70,6 +71,11 @@ const AdminRooms = () => {
   const [isCreatingMultiple, setIsCreatingMultiple] = useState(false);
   const [classifiedRooms, setClassifiedRooms] = useState<Room[]>([]);
 
+  // Selection state for bulk operations
+  const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set());
+  const [selectedClassifiedRooms, setSelectedClassifiedRooms] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [newRoom, setNewRoom] = useState<RoomFormData>({
     room_number: 0,
     description: '',
@@ -96,9 +102,9 @@ const AdminRooms = () => {
     setIsLoading(true);
     try {
       const response = await api.rooms.getAll();
-      // Filter out rooms that were created through classify (have display_category set)
+      // Filter rooms that are visible on the website
       const siteRooms = response.data.filter((room: Room) => {
-        return !room.display_category || room.display_category.trim() === '';
+        return room.is_website_visible === true;
       });
       setRooms(siteRooms);
     } catch (error) {
@@ -109,13 +115,13 @@ const AdminRooms = () => {
     }
   };
 
-  // Fetch rooms that were created through the classify feature
+  // Fetch rooms that were created through the classify feature (not visible on website)
   const fetchClassifiedRooms = async () => {
     try {
       const response = await api.rooms.getAll();
-      // Filter rooms that have display_category set (indicating they were created through classify)
+      // Filter rooms that are NOT visible on the website (classified/internal rooms)
       const classified = response.data.filter((room: Room) => {
-        return room.display_category && room.display_category.trim() !== '';
+        return room.is_website_visible === false;
       });
       setClassifiedRooms(classified);
     } catch (error) {
@@ -126,18 +132,30 @@ const AdminRooms = () => {
   const handleCreateRoom = async () => {
     if (!validateRoomData(newRoom)) return;
 
-    // Ensure numeric values are properly converted to numbers
-    const roomData: RoomFormData = {
-      ...newRoom,
-      room_number: Number(newRoom.room_number),
-      price_per_night: Number(newRoom.price_per_night),
-      capacity: Number(newRoom.capacity)
-    };
-
     setIsSubmitting(true);
     try {
-      await api.rooms.create(roomData, selectedImage || undefined);
-      toast.success('Room created successfully');
+      // Check if this is an existing room that we want to add to site
+      if (roomFound && roomFound.id) {
+        // This is an existing room - just make it visible on the website
+        await api.rooms.addToSite([roomFound.id]);
+        toast.success('Room added to website successfully');
+
+        // Move the room from classified to site rooms in the UI
+        setClassifiedRooms(prev => prev.filter(room => room.id !== roomFound.id));
+        setRooms(prev => [...prev, { ...roomFound, is_website_visible: true }]);
+      } else {
+        // This is a new room - create it with website visibility
+        const roomData: RoomFormData = {
+          ...newRoom,
+          room_number: Number(newRoom.room_number),
+          price_per_night: Number(newRoom.price_per_night),
+          capacity: Number(newRoom.capacity),
+          is_website_visible: true // New rooms added via "Add to Site" should be visible
+        };
+
+        await api.rooms.create(roomData, selectedImage || undefined);
+        toast.success('Room created and added to website successfully');
+      }
 
       // Reset form
       handleDialogClose();
@@ -146,11 +164,11 @@ const AdminRooms = () => {
       fetchRooms();
       fetchClassifiedRooms();
     } catch (error) {
-      console.error('Error creating room:', error);
+      console.error('Error adding room to site:', error);
       if (error instanceof Error) {
-        toast.error(`Failed to create room: ${error.message}`);
+        toast.error(`Failed to add room to site: ${error.message}`);
       } else {
-        toast.error('Failed to create room');
+        toast.error('Failed to add room to site');
       }
     } finally {
       setIsSubmitting(false);
@@ -169,6 +187,7 @@ const AdminRooms = () => {
       amenities: editingRoom.amenities,
       display_category: editingRoom.display_category,
       is_available: editingRoom.is_available,
+      is_website_visible: editingRoom.is_website_visible, // Preserve the website visibility status
     };
 
     if (!validateRoomData(roomData, true, editingRoom.id)) return;
@@ -241,12 +260,15 @@ const AdminRooms = () => {
       return false;
     }
 
-    // Check for duplicate room numbers across both site rooms and classified rooms
-    const allRooms = [...rooms, ...classifiedRooms];
-    const existingRoom = allRooms.find(room => room.room_number === data.room_number);
-    if (existingRoom && (!isEdit || existingRoom.id !== editingRoomId)) {
-      toast.error(`Room number ${data.room_number} already exists. Please choose a different room number.`);
-      return false;
+    // Check for duplicate room numbers, but allow existing rooms when adding to site
+    if (!roomFound || !roomFound.id) {
+      // Only check for duplicates when creating a truly new room
+      const allRooms = [...rooms, ...classifiedRooms];
+      const existingRoom = allRooms.find(room => room.room_number === data.room_number);
+      if (existingRoom && (!isEdit || existingRoom.id !== editingRoomId)) {
+        toast.error(`Room number ${data.room_number} already exists. Please choose a different room number.`);
+        return false;
+      }
     }
 
     if (!data.description.trim()) {
@@ -370,6 +392,7 @@ const AdminRooms = () => {
           amenities: [],
           display_category: roomType,
           is_available: true,
+          is_website_visible: false, // Rooms created via "Create Multiple" are NOT visible on website by default
         };
         roomsToCreate.push(roomData);
       }
@@ -431,6 +454,154 @@ const AdminRooms = () => {
   const getRoomCount = () => {
     const { fromRoom, toRoom } = multipleRoomsData;
     return Math.max(0, toRoom - fromRoom + 1);
+  };
+
+  // Selection helper functions
+  const handleSelectRoom = (roomId: string, isClassified: boolean = false) => {
+    if (isClassified) {
+      const newSelected = new Set(selectedClassifiedRooms);
+      if (newSelected.has(roomId)) {
+        newSelected.delete(roomId);
+      } else {
+        newSelected.add(roomId);
+      }
+      setSelectedClassifiedRooms(newSelected);
+    } else {
+      const newSelected = new Set(selectedRooms);
+      if (newSelected.has(roomId)) {
+        newSelected.delete(roomId);
+      } else {
+        newSelected.add(roomId);
+      }
+      setSelectedRooms(newSelected);
+    }
+  };
+
+  const handleSelectAllRooms = (isClassified: boolean = false) => {
+    if (isClassified) {
+      if (selectedClassifiedRooms.size === classifiedRooms.length) {
+        setSelectedClassifiedRooms(new Set());
+      } else {
+        setSelectedClassifiedRooms(new Set(classifiedRooms.map(room => room.id)));
+      }
+    } else {
+      if (selectedRooms.size === rooms.length) {
+        setSelectedRooms(new Set());
+      } else {
+        setSelectedRooms(new Set(rooms.map(room => room.id)));
+      }
+    }
+  };
+
+  const clearSelection = (isClassified: boolean = false) => {
+    if (isClassified) {
+      setSelectedClassifiedRooms(new Set());
+    } else {
+      setSelectedRooms(new Set());
+    }
+  };
+
+  // Bulk delete functionality
+  const handleBulkDelete = async (isClassified: boolean = false) => {
+    const selectedIds = isClassified ? selectedClassifiedRooms : selectedRooms;
+    if (selectedIds.size === 0) {
+      toast.error('No rooms selected for deletion');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const deletePromises = Array.from(selectedIds).map(id => api.rooms.delete(id));
+      const results = await Promise.allSettled(deletePromises);
+
+      // Count successful and failed deletions
+      const successful = results.filter(result => result.status === 'fulfilled').length;
+      const failed = results.filter(result => result.status === 'rejected').length;
+
+      // Update local state by removing successfully deleted rooms
+      if (isClassified) {
+        setClassifiedRooms(prev => prev.filter(room => !selectedIds.has(room.id)));
+        setSelectedClassifiedRooms(new Set());
+      } else {
+        setRooms(prev => prev.filter(room => !selectedIds.has(room.id)));
+        setSelectedRooms(new Set());
+      }
+
+      // Show appropriate toast messages
+      if (successful > 0) {
+        toast.success(`Successfully deleted ${successful} room${successful !== 1 ? 's' : ''}`);
+      }
+      if (failed > 0) {
+        toast.error(`Failed to delete ${failed} room${failed !== 1 ? 's' : ''}`);
+      }
+    } catch (error) {
+      console.error('Error during bulk delete:', error);
+      toast.error('An error occurred during bulk deletion');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Bulk add to site functionality
+  const handleBulkAddToSite = async () => {
+    if (selectedClassifiedRooms.size === 0) {
+      toast.error('No rooms selected to add to website');
+      return;
+    }
+
+    setIsDeleting(true); // Reuse the loading state
+    try {
+      const roomIds = Array.from(selectedClassifiedRooms);
+      const response = await api.rooms.addToSite(roomIds);
+
+      // Move rooms from classified to site rooms
+      const addedRooms = response.data;
+      setClassifiedRooms(prev => prev.filter(room => !selectedClassifiedRooms.has(room.id)));
+      setRooms(prev => [...prev, ...addedRooms]);
+      setSelectedClassifiedRooms(new Set());
+
+      toast.success(`Successfully added ${addedRooms.length} room${addedRooms.length !== 1 ? 's' : ''} to website`);
+    } catch (error) {
+      console.error('Error adding rooms to site:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to add rooms to website: ${error.message}`);
+      } else {
+        toast.error('Failed to add rooms to website');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Bulk remove from site functionality
+  const handleBulkRemoveFromSite = async () => {
+    if (selectedRooms.size === 0) {
+      toast.error('No rooms selected to remove from website');
+      return;
+    }
+
+    setIsDeleting(true); // Reuse the loading state
+    try {
+      const roomIds = Array.from(selectedRooms);
+      const response = await api.rooms.removeFromSite(roomIds);
+
+      // Move rooms from site to classified rooms
+      const removedRooms = response.data;
+      setRooms(prev => prev.filter(room => !selectedRooms.has(room.id)));
+      setClassifiedRooms(prev => [...prev, ...removedRooms]);
+      setSelectedRooms(new Set());
+
+      toast.success(`Successfully removed ${removedRooms.length} room${removedRooms.length !== 1 ? 's' : ''} from website`);
+    } catch (error) {
+      console.error('Error removing rooms from site:', error);
+      if (error instanceof Error) {
+        toast.error(`Failed to remove rooms from website: ${error.message}`);
+      } else {
+        toast.error('Failed to remove rooms from website');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Handle room lookup by room number
@@ -508,7 +679,6 @@ const AdminRooms = () => {
       capacity: 1,
       room_type: '',
       amenities: [],
-      display_category: '',
       is_available: true,
     });
     setSelectedImage(null);
@@ -565,9 +735,9 @@ const AdminRooms = () => {
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Add New Room to Site</DialogTitle>
+                          <DialogTitle>Add Room to Site</DialogTitle>
                           <DialogDescription>
-                            Enter a room number to load existing details or create a new room. The system will check if the room exists and pre-fill the form with room details like price, capacity, and room type.
+                            Enter a room number to load existing room details or create a new room. If the room exists in the database but isn't visible on the website, it will be made visible. If it doesn't exist, a new room will be created and added to the website.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-3">
@@ -787,10 +957,10 @@ const AdminRooms = () => {
                               {isSubmitting ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Creating...
+                                  {roomFound && roomFound.id ? 'Adding to Site...' : 'Creating...'}
                                 </>
                               ) : (
-                                'Add to Site'
+                                roomFound && roomFound.id ? 'Add Existing Room to Site' : 'Create New Room & Add to Site'
                               )}
                             </Button>
                           )}
@@ -807,22 +977,119 @@ const AdminRooms = () => {
                   <p className="text-sm">Create rooms to display on your website</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Image</TableHead>
-                      <TableHead>Room #</TableHead>
-                      <TableHead>Room Type</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Capacity</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <>
+                  {/* Bulk Actions Toolbar */}
+                  {selectedRooms.size > 0 && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-blue-800">
+                          {selectedRooms.size} room{selectedRooms.size !== 1 ? 's' : ''} selected
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => clearSelection(false)}
+                          className="h-7 text-xs"
+                        >
+                          Clear Selection
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isDeleting}
+                          onClick={handleBulkRemoveFromSite}
+                          className="h-7 border-orange-300 text-orange-600 hover:bg-orange-50"
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              Removing...
+                            </>
+                          ) : (
+                            <>
+                              <X className="mr-1 h-3 w-3" />
+                              Remove from Site
+                            </>
+                          )}
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={isDeleting}
+                              className="h-7"
+                            >
+                              {isDeleting ? (
+                                <>
+                                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="mr-1 h-3 w-3" />
+                                  Delete Selected
+                                </>
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Selected Rooms</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {selectedRooms.size} room{selectedRooms.size !== 1 ? 's' : ''}?
+                                This action cannot be undone and will permanently remove the selected rooms.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleBulkDelete(false)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Delete {selectedRooms.size} Room{selectedRooms.size !== 1 ? 's' : ''}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  )}
+
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={rooms.length > 0 && selectedRooms.size === rooms.length}
+                            onCheckedChange={() => handleSelectAllRooms(false)}
+                            aria-label="Select all rooms"
+                          />
+                        </TableHead>
+                        <TableHead>Image</TableHead>
+                        <TableHead>Room #</TableHead>
+                        <TableHead>Room Type</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Capacity</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {rooms.map((room) => (
-                      <TableRow key={room.id}>
+                      <TableRow
+                        key={room.id}
+                        className={selectedRooms.has(room.id) ? "bg-blue-50" : ""}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedRooms.has(room.id)}
+                            onCheckedChange={() => handleSelectRoom(room.id, false)}
+                            aria-label={`Select room ${room.room_number}`}
+                          />
+                        </TableCell>
                         <TableCell>
                           {room.image_url ? (
                             <div className="w-12 h-12 relative overflow-hidden rounded-md">
@@ -841,13 +1108,6 @@ const AdminRooms = () => {
                         <TableCell className="font-medium">#{room.room_number}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{room.room_type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {room.display_category ? (
-                            <Badge variant="secondary">{room.display_category}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">None</span>
-                          )}
                         </TableCell>
                         <TableCell>{formatPrice(room.price_per_night)}</TableCell>
                         <TableCell>{room.capacity} {room.capacity === 1 ? 'person' : 'people'}</TableCell>
@@ -918,25 +1178,7 @@ const AdminRooms = () => {
                                         />
                                       </div>
                                     </div>
-                                    <div className="grid gap-1.5">
-                                      <Label htmlFor="edit-display-category">Display Category</Label>
-                                      <select
-                                        id="edit-display-category"
-                                        value={editingRoom.display_category || ''}
-                                        onChange={(e) => setEditingRoom({
-                                          ...editingRoom,
-                                          display_category: e.target.value
-                                        })}
-                                        className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                      >
-                                        <option value="">Select a category (optional)</option>
-                                        <option value="Featured Rooms">Featured Rooms</option>
-                                        <option value="Our Elegant Suites">Our Elegant Suites</option>
-                                        <option value="Premium Rooms">Premium Rooms</option>
-                                        <option value="Family Rooms">Family Rooms</option>
-                                        <option value="Budget Friendly">Budget Friendly</option>
-                                      </select>
-                                    </div>
+
                                     <div className="grid gap-1.5">
                                       <Label htmlFor="edit-description">Description</Label>
                                       <Textarea
@@ -1118,6 +1360,7 @@ const AdminRooms = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </>
               )}
                 </CardContent>
               </Card>
@@ -1267,10 +1510,98 @@ const AdminRooms = () => {
                 {classifiedRooms.length > 0 && (
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-4">Classified Rooms ({classifiedRooms.length})</h3>
+
+                    {/* Bulk Actions Toolbar for Classified Rooms */}
+                    {selectedClassifiedRooms.size > 0 && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-blue-800">
+                            {selectedClassifiedRooms.size} room{selectedClassifiedRooms.size !== 1 ? 's' : ''} selected
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => clearSelection(true)}
+                            className="h-7 text-xs"
+                          >
+                            Clear Selection
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled={isDeleting}
+                            onClick={handleBulkAddToSite}
+                            className="h-7 bg-green-600 hover:bg-green-700"
+                          >
+                            {isDeleting ? (
+                              <>
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="mr-1 h-3 w-3" />
+                                Add to Site
+                              </>
+                            )}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={isDeleting}
+                                className="h-7"
+                              >
+                                {isDeleting ? (
+                                  <>
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                    Deleting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="mr-1 h-3 w-3" />
+                                    Delete Selected
+                                  </>
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Selected Classified Rooms</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete {selectedClassifiedRooms.size} classified room{selectedClassifiedRooms.size !== 1 ? 's' : ''}?
+                                  This action cannot be undone and will permanently remove the selected rooms.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleBulkDelete(true)}
+                                  className="bg-red-500 hover:bg-red-600"
+                                >
+                                  Delete {selectedClassifiedRooms.size} Room{selectedClassifiedRooms.size !== 1 ? 's' : ''}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="border rounded-lg">
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-12">
+                              <Checkbox
+                                checked={classifiedRooms.length > 0 && selectedClassifiedRooms.size === classifiedRooms.length}
+                                onCheckedChange={() => handleSelectAllRooms(true)}
+                                aria-label="Select all classified rooms"
+                              />
+                            </TableHead>
                             <TableHead>Room #</TableHead>
                             <TableHead>Room Type</TableHead>
                             <TableHead>Category</TableHead>
@@ -1282,7 +1613,17 @@ const AdminRooms = () => {
                         </TableHeader>
                         <TableBody>
                           {classifiedRooms.map((room) => (
-                            <TableRow key={room.id}>
+                            <TableRow
+                              key={room.id}
+                              className={selectedClassifiedRooms.has(room.id) ? "bg-blue-50" : ""}
+                            >
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedClassifiedRooms.has(room.id)}
+                                  onCheckedChange={() => handleSelectRoom(room.id, true)}
+                                  aria-label={`Select classified room ${room.room_number}`}
+                                />
+                              </TableCell>
                               <TableCell className="font-medium">#{room.room_number}</TableCell>
                               <TableCell>
                                 <Badge variant="outline">{room.room_type}</Badge>
@@ -1323,13 +1664,37 @@ const AdminRooms = () => {
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setRoomToDelete(room.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-red-500"
+                                        onClick={() => setRoomToDelete(room.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This will permanently delete this classified room. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel onClick={() => setRoomToDelete(null)}>
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={handleDeleteRoom}
+                                          className="bg-red-500 hover:bg-red-600"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </div>
                               </TableCell>
                             </TableRow>

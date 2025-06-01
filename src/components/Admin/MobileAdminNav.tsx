@@ -4,7 +4,8 @@ import {
   CalendarClock,
   MessageSquare,
   FileEdit,
-  BedDouble
+  BedDouble,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -36,6 +37,11 @@ const MobileAdminNav = () => {
       title: 'Rooms',
       path: '/admin/rooms',
       icon: <BedDouble className="h-5 w-5" />,
+    },
+    {
+      title: 'Guests',
+      path: '/admin/guests',
+      icon: <Users className="h-5 w-5" />,
     },
     {
       title: 'Messages',

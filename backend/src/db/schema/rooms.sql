@@ -10,8 +10,8 @@ CREATE TABLE rooms (
   room_type TEXT NOT NULL,
   image_url TEXT,
   amenities TEXT[] DEFAULT '{}',
-  display_category TEXT,
   is_available BOOLEAN DEFAULT TRUE,
+  is_website_visible BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -27,6 +27,5 @@ CREATE INDEX idx_rooms_room_number ON rooms(room_number);
 CREATE INDEX idx_rooms_price ON rooms(price_per_night);
 CREATE INDEX idx_rooms_capacity ON rooms(capacity);
 CREATE INDEX idx_rooms_available ON rooms(is_available);
-CREATE INDEX idx_rooms_display_category ON rooms(display_category);
 CREATE INDEX idx_rooms_room_type ON rooms(room_type);
 

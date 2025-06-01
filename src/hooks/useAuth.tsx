@@ -15,8 +15,11 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginExternalUser: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAdmin: () => boolean;
+  isExternalUser: () => boolean;
+  isAdminOrExternalUser: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,6 +86,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const loginExternalUser = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/external-users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+
+        let errorMessage = 'Login failed';
+        if (responseText) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            errorMessage = responseText || errorMessage;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const responseText = await response.text();
+      const data = JSON.parse(responseText);
+      const userData = data.data;
+
+      // Store user in state and localStorage
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      // Redirect to external user dashboard
+      navigate('/external-user/dashboard');
+    } catch (error) {
+      console.error('External user login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -93,8 +140,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user?.role === 'admin';
   };
 
+  const isExternalUser = () => {
+    return user?.role === 'external_user';
+  };
+
+  const isAdminOrExternalUser = () => {
+    return user?.role === 'admin' || user?.role === 'external_user';
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
+      login,
+      loginExternalUser,
+      logout,
+      isAdmin,
+      isExternalUser,
+      isAdminOrExternalUser
+    }}>
       {children}
     </AuthContext.Provider>
   );

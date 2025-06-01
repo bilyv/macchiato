@@ -43,17 +43,32 @@ export const authenticate = async (
       role: string;
     };
 
-    // Check if user exists in database
-    const result = await query(
+    // Check if user exists in database (check both users and external_users tables)
+    let user = null;
+
+    // First check in users table (admin users)
+    const userResult = await query(
       'SELECT id, email, role FROM users WHERE id = $1',
       [decoded.id]
     );
 
-    if (result.rowCount === 0) {
-      throw new AppError('User not found or token invalid', 401);
+    if (userResult.rowCount > 0) {
+      user = userResult.rows[0];
+    } else {
+      // Check in external_users table
+      const externalUserResult = await query(
+        'SELECT id, email, role FROM external_users WHERE id = $1 AND is_active = true',
+        [decoded.id]
+      );
+
+      if (externalUserResult.rowCount > 0) {
+        user = externalUserResult.rows[0];
+      }
     }
 
-    const user = result.rows[0];
+    if (!user) {
+      throw new AppError('User not found or token invalid', 401);
+    }
 
     // Attach user to request object
     req.user = {
@@ -83,6 +98,38 @@ export const authorizeAdmin = (
 
   if (req.user.role !== 'admin') {
     return next(new AppError('Admin access required', 403));
+  }
+
+  next();
+};
+
+export const authorizeExternalUser = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  if (!req.user) {
+    return next(new AppError('Authentication required', 401));
+  }
+
+  if (req.user.role !== 'external_user') {
+    return next(new AppError('External user access required', 403));
+  }
+
+  next();
+};
+
+export const authorizeAdminOrExternalUser = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  if (!req.user) {
+    return next(new AppError('Authentication required', 401));
+  }
+
+  if (req.user.role !== 'admin' && req.user.role !== 'external_user') {
+    return next(new AppError('Admin or external user access required', 403));
   }
 
   next();
